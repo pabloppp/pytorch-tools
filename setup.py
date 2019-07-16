@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='toch_tools',
+    name='torchtools',
     packages=find_packages(),
     description='PyTorch useful tools',
     version='0.1.1',
