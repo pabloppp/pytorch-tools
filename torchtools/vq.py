@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from functional.vq import vector_quantization
+from .functional.vq import vector_quantization
 
 class VectorQuantize(nn.Module):
 	def __init__(self, embedding_size, k):
