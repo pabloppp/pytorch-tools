@@ -41,7 +41,7 @@ class VectorQuantize(nn.Module):
 		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())
 		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices)
 		if self.ema_epsilon is not None and self.training:
-			self._updateEMA(z_e_x, z_q_x)
+			self._updateEMA(z_e_x.detach(), z_q_x.detach())
 		return z_q_x, z_q_x_grd
 
 class Binarize(nn.Module):
