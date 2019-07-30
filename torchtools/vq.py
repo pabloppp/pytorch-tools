@@ -16,10 +16,10 @@ class VectorQuantize(nn.Module):
 		self.codebook.weight.data.uniform_(-1./k, 1./k)	
 		self.vq = vector_quantize.apply
 
+		self.ema_epsilon = ema_epsilon
 		if ema_epsilon is not None:
 			self.register_buffer('ema_element_count', torch.zeros(k))
-			self.register_buffer('ema_weight_sum', torch.zeros_like(self.codebook.weight))
-			self.ema_epsilon = ema_epsilon
+			self.register_buffer('ema_weight_sum', torch.zeros_like(self.codebook.weight))		
 
 	def _laplace_smoothing(self, x, epsilon):
 		n = torch.sum(x)
