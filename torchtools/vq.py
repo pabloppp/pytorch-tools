@@ -3,7 +3,7 @@ from torch import nn
 from .functional.vq import vector_quantize, binarize
 
 class VectorQuantize(nn.Module):
-	def __init__(self, embedding_size, k):
+	def __init__(self, embedding_size, k, ema_epsilon=None):
 		"""
 		Takes an input of size (batch, embedding_size).
 		Returns two lists of the nearest neigbour embeddings to each of the inputs, 
@@ -16,9 +16,32 @@ class VectorQuantize(nn.Module):
 		self.codebook.weight.data.uniform_(-1./k, 1./k)	
 		self.vq = vector_quantize.apply
 
+		if ema_epsilon is not None:
+			self.register_buffer('ema_element_count', torch.zeros(k))
+			self.register_buffer('ema_weight_sum', torch.zeros_like(self.codebook.weight))
+			self.ema_epsilon = ema_epsilon
+
+	def _laplace_smoothing(self, x, epsilon):
+		n = torch.sum(x)
+		return ((x + epsilon) / (n + x.size(0) * epsilon) * n)
+
+	def _updateEMA(self, z_e_x, z_q_x):
+		expanded = self.codebook.weight.unsqueeze(-2).expand(*self.codebook.weight.shape[:-1], z_q_x.size(0), -1)
+		mask = (expanded == z_q_x).float()
+		elem_count = mask.mean(dim=-1).sum(dim=-1)
+		weight_sum = (mask * z_e_x).sum(-2)
+		
+		self.ema_element_count = (self.ema_epsilon * self.ema_element_count) + ((1-self.ema_epsilon) * elem_count)
+		self.ema_element_count = self._laplace_smoothing(self.ema_element_count, self.ema_epsilon)		
+		self.ema_weight_sum = (self.ema_epsilon * self.ema_weight_sum) + ((1-self.ema_epsilon) * weight_sum)
+		
+		self.codebook.weight.data = self.ema_weight_sum / self.ema_element_count.unsqueeze(-1)
+
 	def forward(self, z_e_x):
 		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())
 		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices)
+		if self.ema_epsilon is not None and self.training:
+			self._updateEMA(z_e_x, z_q_x)
 		return z_q_x, z_q_x_grd
 
 class Binarize(nn.Module):
