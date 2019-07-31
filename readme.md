@@ -21,8 +21,6 @@ For the quantization it relies in a differentiable function that you can see [he
 
 The output of the model is a quantized tensor, as well as a Touple of the loss components of the codebook (needed for training) in the form: `qx, (vq_loss, commit_loss)`
 
---- 
-
 When **creating a new instance of the module**, it accepts the following parameters: 
   - **embedding_size**: the size of the embeddings used in the codebook, should match the last dimension of the tensor you want to quantize
   - **k**: the size of the codebook, or number of embeddings. 
@@ -54,6 +52,8 @@ loss.backward()
 optimizer.step()
 
 ```
+
+--- 
 
 #### Binarize: binarize the input tensor [(source)](torchtools/vq.py#L55)
 This transfors the values of a tensor into 0 and 1 depending if they're above or below a specified threshold.
