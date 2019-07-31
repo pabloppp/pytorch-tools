@@ -26,11 +26,10 @@ class VectorQuantize(nn.Module):
 		n = torch.sum(x)
 		return ((x + epsilon) / (n + x.size(0) * epsilon) * n)
 
-	def _updateEMA(self, z_e_x, z_q_x):
-		expanded = self.codebook.weight.unsqueeze(-2).expand(*self.codebook.weight.shape[:-1], z_q_x.size(0), -1)
-		mask = (expanded == z_q_x).float()
-		elem_count = mask.mean(dim=-1).sum(dim=-1)
-		weight_sum = (mask * z_e_x).sum(-2)
+	def _updateEMA(self, z_e_x, indices):
+		mask = nn.functional.one_hot(indices, self.ema_element_count.size(0)).float()
+		elem_count = mask.sum(dim=0)
+		weight_sum = torch.mm(mask.t(), z_e_x)
 		
 		self.ema_element_count = (self.ema_decay * self.ema_element_count) + ((1-self.ema_decay) * elem_count)
 		self.ema_element_count = self._laplace_smoothing(self.ema_element_count, 1e-5)		
@@ -38,12 +37,14 @@ class VectorQuantize(nn.Module):
 		
 		self.codebook.weight.data = self.ema_weight_sum / (self.ema_element_count.unsqueeze(-1))
 
-	def forward(self, z_e_x):
-		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())
-		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices)
+	def forward(self, x):
+		z_e_x = x.view(-1, x.size(-1)) if len(x.shape) > 2 else x
+		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())		
 		if self.ema_loss and self.training:
-			self._updateEMA(z_e_x.detach(), z_q_x.detach())
-		return z_q_x, z_q_x_grd
+			self._updateEMA(z_e_x.detach(), indices.detach())
+		# pick the graded embeddings after updating the codebook in order to have a more accurate commitment loss
+		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices)
+		return z_q_x.view(x.shape), z_q_x_grd.view(x.shape)
 
 class Binarize(nn.Module):
 	def __init__(self, threshold=0.5):
