@@ -5,10 +5,12 @@ from .functional.vq import vector_quantize, binarize
 class VectorQuantize(nn.Module):
 	def __init__(self, embedding_size, k, ema_decay=0.99, ema_loss=False):
 		"""
-		Takes an input of size (batch, embedding_size).
-		Returns two lists of the nearest neigbour embeddings to each of the inputs, 
-		with size (batch, embedding_size).
-		The first list doesn't perform grads, the second one does.
+		Takes an input of variable size (as long as the last dimension matches the embedding size).
+		Returns one tensor containing the nearest neigbour embeddings to each of the inputs, 
+		with the same size as the input.
+
+		If 'get_losses=True' is passed to the forward method it will also return the 
+		vq and commitment components for the loss as a touple in the second output: quantized, (vq_loss, commit_loss)
 		"""
 		super(VectorQuantize, self).__init__()
 
@@ -37,14 +39,18 @@ class VectorQuantize(nn.Module):
 		
 		self.codebook.weight.data = self.ema_weight_sum / (self.ema_element_count.unsqueeze(-1))
 
-	def forward(self, x):
+	def forward(self, x, get_losses=True):
 		z_e_x = x.view(-1, x.size(-1)) if len(x.shape) > 2 else x
-		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())		
+		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())	
+		vq_loss, commit_loss = None, None	
 		if self.ema_loss and self.training:
 			self._updateEMA(z_e_x.detach(), indices.detach())
 		# pick the graded embeddings after updating the codebook in order to have a more accurate commitment loss
-		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices)
-		return z_q_x.view(x.shape), z_q_x_grd.view(x.shape)
+		z_q_x_grd = torch.index_select(self.codebook.weight, dim=0, index=indices) 
+		if get_losses:
+			vq_loss = (z_q_x_grd - z_e_x.detach()).pow(2).mean()
+			commit_loss = (z_e_x - z_q_x_grd.detach()).pow(2).mean()
+		return z_q_x.view(x.shape), (vq_loss, commit_loss)
 
 class Binarize(nn.Module):
 	def __init__(self, threshold=0.5):
