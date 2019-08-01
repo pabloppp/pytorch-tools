@@ -39,7 +39,7 @@ class VectorQuantize(nn.Module):
 		self.codebook.weight.data = self.ema_weight_sum / (self.ema_element_count.unsqueeze(-1))
 
 	def forward(self, x, get_losses=True):
-		z_e_x = x.view(-1, x.size(-1)) if len(x.shape) > 2 else x
+		z_e_x = x.contiguous().view(-1, x.size(-1)) if len(x.shape) > 2 else x
 		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())	
 		vq_loss, commit_loss = None, None	
 		if self.ema_loss and self.training:
