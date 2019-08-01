@@ -19,7 +19,7 @@ Passing a tensor trough the **VectorQuantize** module will return a new tensor w
 
 For the quantization it relies in a differentiable function that you can see [here](torchtools/functional/vq.py#L4)
 
-The output of the model is a quantized tensor, as well as a Touple of the loss components of the codebook (needed for training) in the form: `qx, (vq_loss, commit_loss)`
+The output of the model is a quantized tensor, as well as a Touple of the loss components of the codebook (needed for training), and the indices of the quantized vectors in the form: `qx, (vq_loss, commit_loss), indices`
 
 When **creating a new instance of the module**, it accepts the following parameters: 
   - **embedding_size**: the size of the embeddings used in the codebook, should match the last dimension of the tensor you want to quantize
@@ -37,7 +37,7 @@ from torchtools.vq import VectorQuantize
 
 e = torch.randn(1, 16, 16, 8) # create a random tensor with 8 as its last dimension size
 vquantizer = VectorQuantize(8, k=32, ema_loss=True) # we create the module with embedding size of 8, a codebook of size 32 and make the codebook update using EMA
-qe, (vq_loss, commit_loss) = vquantizer.forward(e) # we quantize our tensor while also getting the loss components
+qe, (vq_loss, commit_loss), indices = vquantizer.forward(e) # we quantize our tensor while also getting the loss components and the indices
 
 # NOTE While the model is in training mode, the codebook will always be updated when calling the forward method, in order to freeze the codebook for inference put it in evaluation mode with 'vquantizer.eval()'
 

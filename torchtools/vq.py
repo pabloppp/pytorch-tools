@@ -7,10 +7,9 @@ class VectorQuantize(nn.Module):
 		"""
 		Takes an input of variable size (as long as the last dimension matches the embedding size).
 		Returns one tensor containing the nearest neigbour embeddings to each of the inputs, 
-		with the same size as the input.
-
-		If 'get_losses=True' is passed to the forward method it will also return the 
-		vq and commitment components for the loss as a touple in the second output: quantized, (vq_loss, commit_loss)
+		with the same size as the input, vq and commitment components for the loss as a touple 
+		in the second output and the indices of the quantized vectors in the third: 
+		quantized, (vq_loss, commit_loss), indices
 		"""
 		super(VectorQuantize, self).__init__()
 
@@ -50,7 +49,7 @@ class VectorQuantize(nn.Module):
 		if get_losses:
 			vq_loss = (z_q_x_grd - z_e_x.detach()).pow(2).mean()
 			commit_loss = (z_e_x - z_q_x_grd.detach()).pow(2).mean()
-		return z_q_x.view(x.shape), (vq_loss, commit_loss)
+		return z_q_x.view(x.shape), (vq_loss, commit_loss), indices.view(x.shape[:-1])
 
 class Binarize(nn.Module):
 	def __init__(self, threshold=0.5):
