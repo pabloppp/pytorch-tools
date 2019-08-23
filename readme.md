@@ -37,6 +37,21 @@ optimizer = RAdam(model.parameters())
 # optimizer = AdamW(model.parameters()) 
 ```
  
+### Lookahead
+Taken as is from https://github.com/lonePatient/lookahead_pytorch  
+Original Paper: https://arxiv.org/abs/1907.08610  
+
+This lookahead can be used with any optimizer
+
+Example of use:
+```python
+from torch import optim
+from torchtools.optim importLookahead
+
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = Lookahead(base_optimizer=optimizer, k=5, alpha=0.5)
+```
+
 ### Vector Quantization
 #### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
 This transforms any tensor to its quantized version using a codebook of embeddings.  
