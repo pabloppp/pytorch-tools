@@ -10,6 +10,15 @@ pip install git+https://github.com/pabloppp/pytorch-tools@0.1.3 -U
 ```
 
 ## Current available tools
+
+### Optimizers
+#### Ranger
+**Taken as is from** https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
+**Blog post: https://medium.com/@lessw/
+
+#### RAdam
+**Taken as is from** https://github.com/LiyuanLucasLiu/RAdam
+**Original Paper:** https://arxiv.org/abs/1908.03265
  
 ### Vector Quantization
 #### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
