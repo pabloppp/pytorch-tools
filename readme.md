@@ -16,10 +16,26 @@ pip install git+https://github.com/pabloppp/pytorch-tools@0.1.3 -U
 Taken as is from https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer  
 Blog post: https://medium.com/@lessw/new-deep-learning-optimizer-ranger-synergistic-combination-of-radam-lookahead-for-the-best-of-2dc83f79a48d
 
+Example of use:
+```python
+from torchtools.optim import Ranger
+
+optimizer = Ranger(model.parameters())
+```
+
 ### RAdam
 Taken as is from https://github.com/LiyuanLucasLiu/RAdam  
 Blog post: https://medium.com/@lessw/new-state-of-the-art-ai-optimizer-rectified-adam-radam-5d854730807b  
-Original Paper: https://arxiv.org/abs/1908.03265
+Original Paper: https://arxiv.org/abs/1908.03265  
+
+Example of use:
+```python
+from torchtools.optim import RAdam, PlainRAdam, AdamW
+
+optimizer = RAdam(model.parameters()) 
+# optimizer = PlainRAdam(model.parameters()) 
+# optimizer = AdamW(model.parameters()) 
+```
  
 ### Vector Quantization
 #### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
