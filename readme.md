@@ -1,6 +1,14 @@
 # Pytorch Tools
 
 ## Install
+
+Requirements:
+```
+PyYorch >= 1.0.0
+Torchivision
+Numpy >= 1.0.0
+```
+
 ```
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
