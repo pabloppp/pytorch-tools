@@ -20,6 +20,14 @@ pip install git+https://github.com/pabloppp/pytorch-tools@0.1.3 -U
 ## Current available tools
 
 ### Optimizers
+
+Comparison table taken from https://github.com/mgrankin/over9000
+
+| Dataset  | Baseline: Adam + OneCycle | Over9000 (RAdam + LARS + Lookahead) | Ralamb (RAdam + LARS) | Ranger (RAdam + Lookahead)| Novograd | Radam | Lookahead |
+| ------------- | ------------- | --|-- | -- | -- | -- | -- |
+| Imagenette size 128, 5 epoch | 0.8493  | 0.8755 | 0.8621 | 0.8594 | 0.8711 | 0.8444 | 0.8578 |
+| Imagewoof size 128, 5 epoch  | 0.6125  | 0.6451 | 0.5737 | 0.5946 | 0.6126 | 0.537 | 0.6106 |
+
 ### Ranger
 Taken as is from https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer  
 Blog post: https://medium.com/@lessw/new-deep-learning-optimizer-ranger-synergistic-combination-of-radam-lookahead-for-the-best-of-2dc83f79a48d
@@ -43,6 +51,36 @@ from torchtools.optim import RAdam, PlainRAdam, AdamW
 optimizer = RAdam(model.parameters()) 
 # optimizer = PlainRAdam(model.parameters()) 
 # optimizer = AdamW(model.parameters()) 
+```
+
+### Over9000 
+Taken as is from https://github.com/mgrankin/over9000
+
+Example of use:
+```python
+from torchtools.optim import Over9000
+
+optimizer = Over9000(model.parameters())
+```
+
+### Novograd 
+Taken as is from https://github.com/mgrankin/over9000
+
+Example of use:
+```python
+from torchtools.optim import Novograd
+
+optimizer = Novograd(model.parameters())
+```
+
+### Ralamb 
+Taken as is from https://github.com/mgrankin/over9000
+
+Example of use:
+```python
+from torchtools.optim import Ralamb
+
+optimizer = Ralamb(model.parameters())
 ```
  
 ### Lookahead
