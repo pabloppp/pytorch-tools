@@ -17,9 +17,9 @@ pip install git+https://github.com/pabloppp/pytorch-tools -U
 pip install git+https://github.com/pabloppp/pytorch-tools@0.1.3 -U
 ```
 
-## Current available tools
+# Current available tools
 
-### Optimizers
+## Optimizers
 
 Comparison table taken from https://github.com/mgrankin/over9000
 
@@ -92,14 +92,39 @@ This lookahead can be used with any optimizer
 Example of use:
 ```python
 from torch import optim
-from torchtools.optim importLookahead
+from torchtools.optim import Lookahead
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 optimizer = Lookahead(base_optimizer=optimizer, k=5, alpha=0.5)
 ```
 
-### Vector Quantization
-#### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
+## LR Schedulers
+
+### Delayed LR
+Allows for a customizable number of initial steps where the learning rate remains fixed.  
+After those steps the learning rate will be updated according to the supplied scheduler's policy
+
+Example of use:
+```python
+from torch import optim, nn
+from torchtools.lr_scheduler import DelayerScheduler
+
+optimizer = optim.Adam(model.parameters(), lr=0.001) # define here your optimizer, the lr that you set will be the one used for the initial delay steps
+
+delay_epochs = 10
+total_epochs = 20
+base_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, delay_epochs) # delay the scheduler for 10 steps
+delayed_scheduler = DelayerScheduler(optimizer, total_epochs - delay_epochs, base_scheduler)
+
+for epoch in range(total_epochs):
+	delayed_scheduler.step()
+	# train(...)
+
+	# The lr will be 0.001 for the first 10 epochs, then will use the policy fro the base_scheduler for the rest of the epochs
+```
+
+## Vector Quantization
+### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
 This transforms any tensor to its quantized version using a codebook of embeddings.  
 It uses a traight-forward approach for applying the gradients.  
 Passing a tensor trough the **VectorQuantize** module will return a new tensor with the same dimension but changing each one of the tensors of the last dimension by the nearest neighbor from the codebook, which has a limited number of values, thus quantizing the tensor.
@@ -142,7 +167,7 @@ optimizer.step()
 
 --- 
 
-#### Binarize: binarize the input tensor [(source)](torchtools/vq.py#L55)
+### Binarize: binarize the input tensor [(source)](torchtools/vq.py#L55)
 This transfors the values of a tensor into 0 and 1 depending if they're above or below a specified threshold.
 It uses a traight-forward approach for applying the gradients, so it's effectively differentiable.
 
