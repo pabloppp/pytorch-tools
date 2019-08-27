@@ -1,4 +1,4 @@
-from torch.optim.lr_scheduler import _LRScheduler
+from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
 
 class DelayerScheduler(_LRScheduler):
 	""" Starts with a flat lr schedule until it reaches N epochs the applies a scheduler 
@@ -32,3 +32,7 @@ class DelayerScheduler(_LRScheduler):
 				self.after_scheduler.step(epoch - self.delay_epochs)
 		else:
 			return super(DelayerScheduler, self).step(epoch)
+
+def DelayedCosineAnnealingLR(optimizer, delay_epochs, total_epochs):
+	base_scheduler = CosineAnnealingLR(optimizer, delay_epochs)
+	return DelayerScheduler(optimizer, total_epochs - delay_epochs, base_scheduler)

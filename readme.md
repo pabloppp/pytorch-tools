@@ -98,6 +98,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 optimizer = Lookahead(base_optimizer=optimizer, k=5, alpha=0.5)
 
 # for a base Lookahead + Adam you can just do:
+# 
 # from torchtools.optim import LookaheadAdam
 ```
 
@@ -124,6 +125,12 @@ for epoch in range(total_epochs):
 	# train(...)
 
 	# The lr will be 0.001 for the first 10 epochs, then will use the policy fro the base_scheduler for the rest of the epochs
+
+
+# for a base DelayerScheduler + CosineAnnealingLR you can just do:
+#
+# from torchtools.lr_scheduler import DelayedCosineAnnealingLR
+# scheduler = DelayedCosineAnnealingLR(optimizer, delay_epochs, total_epochs)
 ```
 
 ## Vector Quantization

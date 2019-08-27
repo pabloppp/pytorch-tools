@@ -1,1 +1,1 @@
-from .delayed import DelayerScheduler
+from .delayed import DelayerScheduler, DelayedCosineAnnealingLR
