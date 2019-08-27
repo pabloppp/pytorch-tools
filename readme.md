@@ -53,14 +53,14 @@ optimizer = RAdam(model.parameters())
 # optimizer = AdamW(model.parameters()) 
 ```
 
-### Over9000 
+### RangerLars (Over9000) 
 Taken as is from https://github.com/mgrankin/over9000
 
 Example of use:
 ```python
-from torchtools.optim import Over9000
+from torchtools.optim import RangerLars # Over9000
 
-optimizer = Over9000(model.parameters())
+optimizer = RangerLars(model.parameters())
 ```
 
 ### Novograd 
@@ -96,6 +96,9 @@ from torchtools.optim import Lookahead
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 optimizer = Lookahead(base_optimizer=optimizer, k=5, alpha=0.5)
+
+# for a base Lookahead + Adam you can just do:
+# from torchtools.optim import LookaheadAdam
 ```
 
 ## LR Schedulers

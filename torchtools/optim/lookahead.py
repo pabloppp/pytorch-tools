@@ -3,8 +3,10 @@
 # Original paper: https://arxiv.org/abs/1907.08610
 ####
 
+# Lookahead implementation from https://github.com/lonePatient/lookahead_pytorch/blob/master/optimizer.py
+
 import itertools as it
-from torch.optim import Optimizer
+from torch.optim import Optimizer, Adam
 
 class Lookahead(Optimizer):
     def __init__(self, base_optimizer,alpha=0.5, k=6):
@@ -39,4 +41,9 @@ class Lookahead(Optimizer):
                 q.data.add_(self.alpha,p.data - q.data)
                 p.data.copy_(q.data)
         return loss
+
+
+def LookaheadAdam(params, alpha=0.5, k=6, *args, **kwargs):
+     adam = Adam(params, *args, **kwargs)
+     return Lookahead(adam, alpha, k)
 
