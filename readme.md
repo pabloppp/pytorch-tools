@@ -121,8 +121,8 @@ base_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, delay_epochs) #
 delayed_scheduler = DelayerScheduler(optimizer, total_epochs - delay_epochs, base_scheduler)
 
 for epoch in range(total_epochs):
-	delayed_scheduler.step()
 	# train(...)
+	delayed_scheduler.step()
 
 	# The lr will be 0.001 for the first 10 epochs, then will use the policy fro the base_scheduler for the rest of the epochs
 
@@ -130,7 +130,7 @@ for epoch in range(total_epochs):
 # for a base DelayerScheduler + CosineAnnealingLR you can just do:
 #
 # from torchtools.lr_scheduler import DelayedCosineAnnealingLR
-# scheduler = DelayedCosineAnnealingLR(optimizer, delay_epochs, total_epochs)
+# scheduler = DelayedCosineAnnealingLR(optimizer, delay_epochs, cosine_annealing_epochs) # the sum of both must be the total number of epochs
 ```
 
 ## Vector Quantization

@@ -16,7 +16,7 @@ class DelayerScheduler(_LRScheduler):
 		super().__init__(optimizer)
 
 	def get_lr(self):
-		if self.last_epoch > self.delay_epochs:
+		if self.last_epoch >= self.delay_epochs:
 			if not self.finished:
 				self.after_scheduler.base_lrs = self.base_lrs
 				self.finished = True
@@ -33,6 +33,6 @@ class DelayerScheduler(_LRScheduler):
 		else:
 			return super(DelayerScheduler, self).step(epoch)
 
-def DelayedCosineAnnealingLR(optimizer, delay_epochs, total_epochs):
-	base_scheduler = CosineAnnealingLR(optimizer, delay_epochs)
-	return DelayerScheduler(optimizer, total_epochs - delay_epochs, base_scheduler)
+def DelayedCosineAnnealingLR(optimizer, delay_epochs, cosine_annealing_epochs):
+	base_scheduler = CosineAnnealingLR(optimizer, cosine_annealing_epochs)
+	return DelayerScheduler(optimizer, delay_epochs, base_scheduler)
