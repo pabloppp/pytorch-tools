@@ -102,6 +102,17 @@ optimizer = Lookahead(base_optimizer=optimizer, k=5, alpha=0.5)
 # from torchtools.optim import LookaheadAdam
 ```
 
+### Lookahead
+Taken as is from https://github.com/cybertronai/pytorch-lamb/blob/master/pytorch_lamb/lamb.py
+Original Paper: https://arxiv.org/abs/1904.00962
+
+Example of use:
+```python
+from torchtools.optim import Lamb
+
+optimizer = optim.Lamb(model.parameters())
+```
+
 ## LR Schedulers
 
 ### Delayed LR
