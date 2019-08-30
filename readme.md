@@ -144,6 +144,19 @@ for epoch in range(total_epochs):
 # scheduler = DelayedCosineAnnealingLR(optimizer, delay_epochs, cosine_annealing_epochs) # the sum of both must be the total number of epochs
 ```
 
+## Activations
+
+### Mish
+Taken as is from https://github.com/lessw2020/mish
+Original Paper: https://arxiv.org/abs/1908.08681v1
+
+Example of use:
+```python
+from torchtools.nn import Mish
+
+# Then you can just use Mish as a replacement for any activation function, like ReLU
+```
+
 ## Vector Quantization
 ### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
 This transforms any tensor to its quantized version using a codebook of embeddings.  
