@@ -4,7 +4,7 @@
 
 Requirements:
 ```
-PyYorch >= 1.0.0
+PyTorch >= 1.0.0
 Torchivision
 Numpy >= 1.0.0
 ```
@@ -154,8 +154,9 @@ for epoch in range(total_epochs):
 ## Activations
 
 ### Mish
-Taken as is from https://github.com/lessw2020/mish
-Original Paper: https://arxiv.org/abs/1908.08681v1
+Original implementation: https://github.com/digantamisra98/Mish  
+Original Paper: https://arxiv.org/abs/1908.08681v1  
+Implementation taken as is from https://github.com/lessw2020/mish  
 
 Example of use:
 ```python
