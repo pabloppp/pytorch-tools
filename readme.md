@@ -165,6 +165,22 @@ from torchtools.nn import Mish
 # Then you can just use Mish as a replacement for any activation function, like ReLU
 ```
 
+## Layers
+
+### SimpleSelfAttention
+Implementation taken as is from https://github.com/sdoria/SimpleSelfAttention
+
+Example of use:
+```python
+from torchtools.nn import SimpleSelfAttention
+
+# The input of the layer has to at least have 3 dimensions (B, C, N), 
+# the attention will be performed in the 2nd dimension.
+# 
+# For images, the input will be internally reshaped to 3 dimensions,
+# and reshaped back to the original shape before returning it
+```
+
 ## Vector Quantization
 ### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
 This transforms any tensor to its quantized version using a codebook of embeddings.  
