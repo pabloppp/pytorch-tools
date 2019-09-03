@@ -8,7 +8,7 @@ class vector_quantize(Function):
 			codebook_sqr = torch.sum(codebook ** 2, dim=1)
 			x_sqr = torch.sum(x ** 2, dim=1, keepdim=True)
 
-			dist  = torch.addmm(codebook_sqr + x_sqr, x, codebook.t(), alpha=-2.0, beta=1.0)
+			dist = torch.addmm(codebook_sqr + x_sqr, x, codebook.t(), alpha=-2.0, beta=1.0)
 			_, indices = dist.min(dim=1)
 			
 			ctx.save_for_backward(indices, codebook)

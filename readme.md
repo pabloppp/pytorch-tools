@@ -198,12 +198,13 @@ When **creating a new instance of the module**, it accepts the following paramet
   - **ema_loss** (default=False): Enables Exponentially Moving Average update of the codebook (instead of relying on gradient descent as EMA converges faster) 
   
 When **calling the forward method** of the module, it accepts the following parameters:
-  - **x**: this is the tensor you want to quantize, make sure the last dimension of the tensor matches embedding_size defined when instantiating the module
+  - **x**: this is the tensor you want to quantize, make sure the dimension that you want to quantize (by default is the last one) matches embedding_size defined when instantiating the module
   - **get_losses** (default=True): when False, the vq_loss and commit_loss components of the output will both be None, this should speed up a little bit the model when used for inference.
+  - **dim** (default=-1): The dimension across which the input should be quantized.
 
 Example of use:
 ```python
-from torchtools.vq import VectorQuantize
+from torchtools.nn import VectorQuantize
 
 e = torch.randn(1, 16, 16, 8) # create a random tensor with 8 as its last dimension size
 vquantizer = VectorQuantize(8, k=32, ema_loss=True) # we create the module with embedding size of 8, a codebook of size 32 and make the codebook update using EMA
@@ -233,7 +234,7 @@ For the quantization it relies in a differentiable function that you can see [he
 
 Example of use:
 ```python
-from torchtools.vq import Binarize
+from torchtools.nn import Binarize
 
 e = torch.randn(8, 16) # create a random tensor with any dimension
 

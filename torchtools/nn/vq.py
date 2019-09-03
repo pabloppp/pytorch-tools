@@ -36,9 +36,17 @@ class VectorQuantize(nn.Module):
 		self.ema_element_count = self._laplace_smoothing(self.ema_element_count, 1e-5)		
 		self.ema_weight_sum = (self.ema_decay * self.ema_weight_sum) + ((1-self.ema_decay) * weight_sum)
 		
-		self.codebook.weight.data = self.ema_weight_sum / (self.ema_element_count.unsqueeze(-1))
+		self.codebook.weight.data = self.ema_weight_sum / self.ema_element_count.unsqueeze(-1)
 
-	def forward(self, x, get_losses=True):
+	def idx2vq(self, idx, dim=-1):
+		q_idx = self.codebook(idx)
+		if dim != -1:
+			q_idx = q_idx.transpose(-1, dim)
+		return q_idx
+
+	def forward(self, x, get_losses=True, dim=-1):
+		if dim != -1:
+			x = x.transpose(dim, -1)
 		z_e_x = x.contiguous().view(-1, x.size(-1)) if len(x.shape) > 2 else x
 		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())	
 		vq_loss, commit_loss = None, None	
@@ -49,7 +57,11 @@ class VectorQuantize(nn.Module):
 		if get_losses:
 			vq_loss = (z_q_x_grd - z_e_x.detach()).pow(2).mean()
 			commit_loss = (z_e_x - z_q_x_grd.detach()).pow(2).mean()
-		return z_q_x.view(x.shape), (vq_loss, commit_loss), indices.view(x.shape[:-1])
+
+		z_q_x = z_q_x.view(x.shape)
+		if dim != -1:
+			z_q_x = z_q_x.transpose(dim, -1)
+		return z_q_x, (vq_loss, commit_loss), indices.view(x.shape[:-1])
 
 class Binarize(nn.Module):
 	def __init__(self, threshold=0.5):
