@@ -181,6 +181,26 @@ from torchtools.nn import SimpleSelfAttention
 # and reshaped back to the original shape before returning it
 ```
 
+### PixelNorm
+Inspired from https://github.com/github-pengge/PyTorch-progressive_growing_of_gans
+
+Example of use:
+```python
+from torchtools.nn import PixelNorm
+
+model = nn.Linear(
+	nn.Conv2d(...),
+	PixelNorm(),
+	nn.ReLU()
+)
+
+# It doesn't require any parameter, it just performs a simple element-wise normalization
+# x / torch.sqrt(torch.mean(x ** 2, dim=1, keepdim=True) + 1e-8)
+#
+# Just use it as a regular layer, generally after convolutions and before ReLU
+# (warning) since it performs a srtq root it's pretty slow if the layer sizes are big
+```
+
 ## Criterions
 
 ### Gradient Penalty (for WGAN-GP)
