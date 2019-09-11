@@ -204,7 +204,7 @@ model = nn.Linear(
 ## Criterions
 
 ### Gradient Penalty (for WGAN-GP)
-Implementation taken with minor changes from https://github.com/caogang/wgan-gp
+Implementation taken with minor changes from https://github.com/caogang/wgan-gp  
 Original paper https://arxiv.org/pdf/1704.00028.pdf
 
 Example of use:
@@ -216,7 +216,7 @@ from torchtools.nn import GPLoss
 discriminator = ...
 gpcriterion = GPLoss(discriminator) # l = 10 by default
 
-gradient_penalty = GPLoss(real_data, fake_data)
+gradient_penalty = gpcriterion(real_data, fake_data)
 discriminator_loss = ... + gradient_penalty # add the gp component to the Wasserstein loss
 ```
 
