@@ -181,6 +181,26 @@ from torchtools.nn import SimpleSelfAttention
 # and reshaped back to the original shape before returning it
 ```
 
+## Criterions
+
+### Gradient Penalty (for WGAN-GP)
+Implementation taken with minor changes from https://github.com/caogang/wgan-gp
+Original paper https://arxiv.org/pdf/1704.00028.pdf
+
+Example of use:
+```python
+from torchtools.nn import GPLoss
+# This criterion defines the gradient penalty for WGAN GP
+# For an example of a training cycle refer to this repo https://github.com/caogang/wgan-gp/blob/master/gan_cifar10.py#L185
+
+discriminator = ...
+gpcriterion = GPLoss(discriminator) # l = 10 by default
+
+gradient_penalty = GPLoss(real_data, fake_data)
+discriminator_loss = ... + gradient_penalty # add the gp component to the Wasserstein loss
+```
+
+
 ## Vector Quantization
 ### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
 This transforms any tensor to its quantized version using a codebook of embeddings.  
