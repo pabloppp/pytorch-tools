@@ -8,7 +8,7 @@ from torch import autograd
 
 def gradient_penalty(netD, real_data, fake_data, l=10):
     batch_size = real_data.size(0)
-    alpha = real_data.new_empty((batch_size, 1, 1, 1)).normal_()
+    alpha = real_data.new_empty((batch_size, 1, 1, 1)).uniform_(0, 1)
     alpha = alpha.expand_as(real_data)
 
     interpolates = alpha * real_data + ((1 - alpha) * fake_data)
