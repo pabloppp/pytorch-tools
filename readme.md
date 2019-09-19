@@ -229,7 +229,7 @@ Example of use:
 # It's widely used in style transfer.
 from torchtools.nn import TVLoss
 
-tvcriterion = TVLoss(discriminator) # reduction = 'sum' and alpha = 1e-4 by default
+tvcriterion = TVLoss() # reduction = 'sum' and alpha = 1e-4 by default
 
 G = ... # output image
 tv_loss = tvcriterion(G)
