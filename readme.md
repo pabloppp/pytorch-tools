@@ -220,6 +220,22 @@ gradient_penalty = gpcriterion(real_data, fake_data)
 discriminator_loss = ... + gradient_penalty # add the gp component to the Wasserstein loss
 ```
 
+### Total Variation Loss
+Total Variation denoising https://www.wikiwand.com/en/Total_variation_denoising  
+
+Example of use:
+```python
+# This loss (or regularization) is usefull for removing artifacts and noise in generated images.  
+# It's widely used in style transfer.
+from torchtools.nn import TVLoss
+
+tvcriterion = TVLoss(discriminator) # reduction = 'sum' and alpha = 1e-4 by default
+
+G = ... # output image
+tv_loss = tvcriterion(G)
+loss = ... + tv_loss # add the tv loss component to your reconstruction loss
+```
+
 
 ## Vector Quantization
 ### VectorQuantize: Encodding based quantization [(source)](torchtools/vq.py#L5)
