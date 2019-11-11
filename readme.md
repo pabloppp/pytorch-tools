@@ -201,7 +201,7 @@ model = nn.Linear(
 # (warning) since it performs a srtq root it's pretty slow if the layer sizes are big
 ```
 
-### PixelNorm
+### Adaptive Instance Normalization - AdaIN
 Implementation based on https://github.com/SiskonEmilia/StyleGAN-PyTorch  
 Original Paper https://arxiv.org/abs/1703.06868  
 
