@@ -5,3 +5,4 @@ from .gp_loss import GPLoss
 from .pixel_normalzation import PixelNorm
 from .perceptual import TVLoss
 from .adain import AdaIN
+from .transformers import GPTTransformerEncoderLayer
