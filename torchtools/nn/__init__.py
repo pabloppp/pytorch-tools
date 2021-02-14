@@ -6,3 +6,4 @@ from .pixel_normalzation import PixelNorm
 from .perceptual import TVLoss
 from .adain import AdaIN
 from .transformers import GPTTransformerEncoderLayer
+from .evonorm2d import EvoNorm2D
