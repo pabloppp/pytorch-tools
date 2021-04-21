@@ -7,3 +7,4 @@ from .perceptual import TVLoss
 from .adain import AdaIN
 from .transformers import GPTTransformerEncoderLayer
 from .evonorm2d import EvoNorm2D
+from .pos_embeddings import RotaryEmbedding

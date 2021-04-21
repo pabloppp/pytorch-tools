@@ -14,7 +14,7 @@ Numpy >= 1.0.0
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
 # if you want to install a specific version to avoid breaking changes (for example, v0.2.6), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.6 -U
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.7 -U
 ```
 
 # Current available tools
@@ -358,3 +358,26 @@ binarizer = Binarize(threshold=0.5) # you can set the threshold you want, for ex
 
 bq = binarizer(e) # will return a tensor with the same shape as e, but full of 0s and 1s
 ```
+
+## Embeddings
+
+### RotaryEmbedding
+Implementation taken as is from https://github.com/lucidrains/x-transformers/blob/main/x_transformers/x_transformers.py#L161
+
+Example of use:
+```python
+from torchtools.nn import RotaryEmbedding
+
+class MyModel(nn.Module):
+	def __init__(self, dim):
+		...
+		self.rotary_pos_embd =  RotaryEmbedding(dim)
+		...
+	
+	def forward(self, x):
+		x = self.rotary_pos_embd(x)
+		...
+
+
+```
+
