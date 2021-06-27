@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.6), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.7 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.8), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.8 -U
 ```
 
 # Current available tools
@@ -259,6 +259,28 @@ class MyTransformer(nn.Module):
 		self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
 		...
 
+```
+
+### Stylegan2 Modulate / Demodulate wrapper
+Implementation based on https://github.com/lucidrains/stylegan2-pytorch/blob/master/stylegan2_pytorch/stylegan2_pytorch.py#L454 by Lucidrains
+
+You can use it as a wrapper for `torch.nn.Conv2d`, the only Conv2d parámeter that you cannot use is 'groups' since it will be overriden for this to work.
+
+Example of use: 
+```python
+from torchtools.nn import Modulated2d
+
+class MyModel(nn.Module):
+	def __init__(self):
+		...
+		conv = nn.Conv2d(16, 32, kernel_size=3, padding=1) # use bias=False for this to behave just like Lucidrai's module
+		self.mod_conv = Modulated2d(conv, demod=True) # set demod=False for RGB output
+		...
+
+	def forward(self, x, w):
+		...
+		x = self.mod_conv(x, w) # 'x' is a 4D tensor (B x C x W x H) and 'w' is a 2D tensor (B x C)
+		...
 ```
 
 ## Criterions
