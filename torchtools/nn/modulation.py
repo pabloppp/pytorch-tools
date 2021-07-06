@@ -19,6 +19,7 @@ class Modulated2d(nn.Module):
         if self.module.bias is not None:
             self.module.bias_orig = nn.Parameter(self.module.bias.data)
             del self.module._parameters['bias']
+            self.module.bias = None
         else:
             self.module.bias_orig = None
 
