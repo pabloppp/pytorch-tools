@@ -1,6 +1,7 @@
 
 import torch
 from torch import nn
+import math
 
 ####
 # TOTALLY INSPIRED AND EVEN COPIED SOME CHUNKS FROM 
@@ -8,7 +9,7 @@ from torch import nn
 # But as a twist, I decided to make this a wrapper for a the regular convolution
 ####
 class Modulated2d(nn.Module):
-    def __init__(self, module, demod=True, eps = 1e-8):
+    def __init__(self, module, demod=True, eps = 1e-8, decay=1.0):
         super().__init__()
         self.demod = demod
         self.eps = eps
@@ -23,11 +24,17 @@ class Modulated2d(nn.Module):
         else:
             self.module.bias_orig = None
 
+        fan_in = self.module.weight_orig.in_channel * self.module.weight_orig.kernel_size ** 2
+        self.scale = 1 / math.sqrt(fan_in)
+
+        self.register_buffer("ema", torch.tensor(1.0))
+        self.decay = decay
+
     def forward(self, x, y):
         b, c, h, w = x.shape
         w1 = y[:, None, :, None, None]
         w2 = self.module.weight_orig[None, :, :, :, :]
-        weights = w2 * (w1 + 1)
+        weights = self.scale * w2 * (w1 + 1)
 
         if self.demod:
             d = torch.rsqrt((weights ** 2).sum(dim=(2, 3, 4), keepdim=True) + self.eps)
@@ -37,6 +44,13 @@ class Modulated2d(nn.Module):
 
         _, _, *ws = weights.shape
         weights = weights.reshape(b * self.module.weight_orig.size(0), *ws)
+
+        if self.decay < 1:
+            if self.training:
+                var = x.pow(2).mean((0, 1, 2, 3))
+                self.ema.mul_(self.decay).add_(var.detach(), alpha=1 - self.decay)
+            weights = weights / (torch.sqrt(self.ema) + 1e-8)
+
         self.module.weight = weights
         if self.module.bias_orig is not None:
             self.module.bias = self.module.bias_orig.repeat(b)
