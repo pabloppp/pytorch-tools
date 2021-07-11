@@ -24,7 +24,7 @@ class Modulated2d(nn.Module):
         else:
             self.module.bias_orig = None
 
-        fan_in = self.module.weight_orig.in_channel * self.module.weight_orig.kernel_size ** 2
+        fan_in = self.module.weight_orig.size(1) * self.module.weight_orig.size(2) ** 2
         self.scale = 1 / math.sqrt(fan_in)
 
         self.register_buffer("ema", torch.tensor(1.0))
