@@ -29,8 +29,9 @@ class FourierFeatures2d(nn.Module):
 
         coord_h, coord_w = self.coord_h.unsqueeze(0), self.coord_w.unsqueeze(0)
 
-        coord_h = coord_h / affine[:, 5] # scale
-        coord_w = coord_w / affine[:, 4]
+        if self.allow_scaling:
+            coord_h = coord_h / affine[:, 5] # scale
+            coord_w = coord_w / affine[:, 4]
 
         coord_h = coord_h - (affine[:, 3] * self.lf) # shift
         coord_w = coord_w - (affine[:, 2] * self.lf) 
