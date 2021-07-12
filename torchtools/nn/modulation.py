@@ -5,57 +5,45 @@ import math
 
 ####
 # TOTALLY INSPIRED AND EVEN COPIED SOME CHUNKS FROM 
-# https://github.com/lucidrains/stylegan2-pytorch/blob/master/stylegan2_pytorch/stylegan2_pytorch.py#L454
-# But as a twist, I decided to make this a wrapper for a the regular convolution
+# https://github.com/rosinality/alias-free-gan-pytorch/blob/main/model.py#L143
+# But made it extend from the base Conv2d to avoid some boilerplate
 ####
-class Modulated2d(nn.Module):
-    def __init__(self, module, demod=True, eps = 1e-8, decay=1.0):
-        super().__init__()
-        self.demod = demod
-        self.eps = eps
-        self.module = module
-        nn.init.kaiming_normal_(self.module.weight, a=0, mode='fan_in', nonlinearity='leaky_relu')
-        self.module.weight_orig = nn.Parameter(self.module.weight.data)
-        del self.module._parameters['weight']
-        if self.module.bias is not None:
-            self.module.bias_orig = nn.Parameter(self.module.bias.data)
-            del self.module._parameters['bias']
-            self.module.bias = None
-        else:
-            self.module.bias_orig = None
+class ModulatedConv2d(nn.Conv2d):
+    def __init__(self,  *args, demodulate=True, ema_decay=1.0, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        fan_in = self.module.weight_orig.size(1) * self.module.weight_orig.size(2) ** 2
+        fan_in = self.in_channel * self.kernel_size ** 2
         self.scale = 1 / math.sqrt(fan_in)
 
-        self.register_buffer("ema", torch.tensor(1.0))
-        self.decay = decay
+        self.demodulate = demodulate
+        self.ema_decay = ema_decay
+        self.register_buffer("ema_var", torch.tensor(1.0))
 
-    def forward(self, x, y):
-        b, c, h, w = x.shape
-        w1 = y[:, None, :, None, None]
-        w2 = self.module.weight_orig[None, :, :, :, :]
-        weights = self.scale * w2 * (w1 + 1)
+    def forward(self, x, w):
+        batch, in_channel, height, width = x.shape
 
-        if self.demod:
-            d = torch.rsqrt((weights ** 2).sum(dim=(2, 3, 4), keepdim=True) + self.eps)
-            weights = weights * d
+        style = w.view(batch, 1, in_channel, 1, 1)
+        weight = self.scale * self.weight * style
 
-        x = x.reshape(1, -1, h, w)
+        if self.demodulate:
+            demod = torch.rsqrt(weight.pow(2).sum([2, 3, 4]) + 1e-8)
+            weight = weight * demod.view(batch, self.out_channel, 1, 1, 1)
 
-        _, _, *ws = weights.shape
-        weights = weights.reshape(b * self.module.weight_orig.size(0), *ws)
+        weight = weight.view(
+            batch * self.out_channel, in_channel, self.kernel_size, self.kernel_size
+        )
 
-        if self.decay < 1:
+        if self.ema_decay < 1:
             if self.training:
                 var = x.pow(2).mean((0, 1, 2, 3))
-                self.ema.mul_(self.decay).add_(var.detach(), alpha=1 - self.decay)
-            weights = weights / (torch.sqrt(self.ema) + 1e-8)
+                self.ema_var.mul_(self.ema_decay).add_(var.detach(), alpha=1 - self.ema_decay)
 
-        self.module.weight = weights
-        if self.module.bias_orig is not None:
-            self.module.bias = self.module.bias_orig.repeat(b)
-        self.module.groups = b
+            weight = weight / (torch.sqrt(self.ema_var) + 1e-8)
 
-        x = self.module(x)
-        x = x.reshape(-1, self.module.weight_orig.size(0), h, w)
-        return x
+        input = x.view(1, batch * in_channel, height, width)
+        self.groups = batch
+        out = self._conv_forward(input, weight, self.bias)
+        _, _, height, width = out.shape
+        out = out.view(batch, self.out_channel, height, width)
+
+        return out
