@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.8), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.11 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.12), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.12 -U
 ```
 
 # Current available tools
@@ -287,6 +287,51 @@ class MyModel(nn.Module):
 		x = self.conv(x, w) # 'x' is a 4D tensor (B x C x W x H) and 'w' is a 2D tensor (B x C)
 		...
 ```
+
+### Equal Layers (EqualNorm, EqualLinear)
+Implementation based on https://github.com/rosinality/alias-free-gan-pytorch/blob/main/stylegan2/model.py#L94
+
+It extends the base classes (nn.Linear, nn.Conv2d, nn.LeakyReLU) so you can use this as a drop-in replacement, although it includes some optiona parameters.
+
+Example of use: 
+```python
+from torchtools.nn import EqualLinear, EqualLeakyReLU, EqualConv2d
+
+class MyModel(nn.Module):
+	def __init__(self):
+		...
+		self.linear = EqualLinear(16, 32, bias_init=1, lr_mul=0.01) # bias_init and lr_mul are extra optional params
+		self.leaky_relu = EqualLeakyReLU(negative_slope=0.2)
+		self.conv = EqualConv2d(16, 32, kernel_size=3, padding=1)
+		# Since this classes extend from the base classes, you can use all parameters from the original classes.
+		...
+
+```
+
+### FourierFeatures2d
+Implementation inspired on https://github.com/rosinality/alias-free-gan-pytorch/blob/main/model.py#L88
+but improved using my own understanding of how this should work...
+
+It creates a 2d tensor of embeddings following a fourier series based on the parameters you provide, this features are dynamic, meaning that affine transformations can be applied to them in order to shift, rotate, and even scale (experimental).
+
+```python
+from torchtools.nn import EqualLinear, EqualLeakyReLU, EqualConv2d
+
+class MyModel(nn.Module):
+	def __init__(self, dim=256, margin=10, cutoff=2):
+		...
+		self.feats = FourierFeatures2d(4+margin*2, dim, cutoff) # optionally enable scaling with allow_scaling=True
+		# Also, you can randomize the frequencies if you plan on keeping them fixed, setting w_scale to any value > 0
+		...
+
+	def forward(self, affine):
+		...
+		embds = self.feats(affine) # 'affine' should be a Bx4 tensor, or Bx6 if scaling is enabled...
+		...
+
+```
+
+
 
 ## Criterions
 

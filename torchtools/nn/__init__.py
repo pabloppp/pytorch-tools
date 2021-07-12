@@ -10,3 +10,4 @@ from .evonorm2d import EvoNorm2D
 from .pos_embeddings import RotaryEmbedding
 from .modulation import ModulatedConv2d
 from .equal_layers import EqualConv2d, EqualLeakyReLU, EqualLinear
+from .fourier_features import FourierFeatures2d
