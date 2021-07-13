@@ -29,16 +29,16 @@ class FourierFeatures2d(nn.Module):
 
         coord_h, coord_w = self.coord_h.unsqueeze(0), self.coord_w.unsqueeze(0)
 
-        if self.allow_scaling:
-            coord_h = coord_h / affine[:, 5] # scale
-            coord_w = coord_w / affine[:, 4]
-
         coord_h = coord_h - (affine[:, 3] * self.lf) # shift
         coord_w = coord_w - (affine[:, 2] * self.lf) 
         
         _coord_h = -coord_w * affine[:, 1] + coord_h * affine[:, 0] # rotation
         coord_w = coord_w * affine[:, 0] + coord_h * affine[:, 1]
         coord_h = _coord_h
+
+        if self.allow_scaling:
+            coord_h = coord_h / affine[:, 5] # scale
+            coord_w = coord_w / affine[:, 4]
 
         coord_h = torch.cat((torch.sin(coord_h), torch.cos(coord_h)), 1)
         coord_w = torch.cat((torch.sin(coord_w), torch.cos(coord_w)), 1)
