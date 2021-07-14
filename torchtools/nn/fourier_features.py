@@ -37,8 +37,8 @@ class FourierFeatures2d(nn.Module):
         coord_h = _coord_h
 
         if self.allow_scaling:
-            coord_h = coord_h / affine[:, 5] # scale
-            coord_w = coord_w / affine[:, 4]
+            coord_h = coord_h / nn.functional.threshold(affine[:, 5], 1.0, 1.0) # scale
+            coord_w = coord_w / nn.functional.threshold(affine[:, 4], 1.0, 1.0)
 
         coord_h = torch.cat((torch.sin(coord_h), torch.cos(coord_h)), 1)
         coord_w = torch.cat((torch.sin(coord_w), torch.cos(coord_w)), 1)
