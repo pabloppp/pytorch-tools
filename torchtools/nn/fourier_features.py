@@ -3,7 +3,7 @@ from torch import nn
 import math
 
 class FourierFeatures2d(nn.Module):
-    def __init__(self, size, dim, cutoff, affine_eps=1e-8, freq_range=[-1, 1], w_scale=0, allow_scaling=False):
+    def __init__(self, size, dim, cutoff, affine_eps=1e-8, freq_range=[-1, 1], w_scale=0, allow_scaling=False, op_order=['r', 't', 's']):
         super().__init__()
         self.affine_eps = affine_eps
         coords = torch.linspace(freq_range[0], freq_range[1], size+1)[:-1]
@@ -16,6 +16,9 @@ class FourierFeatures2d(nn.Module):
         self.register_buffer("coord_w", self.coord_h.transpose(1, 2).detach())
         self.register_buffer("lf", freqs.view(1, dim // 4, 1, 1) * 2*math.pi * 2/size)
         self.allow_scaling = allow_scaling
+        for op in op_order:
+            assert op in ['r', 't', 's'], f"Operation not valid: {op}"
+        self.op_order = op_order
 
     def forward(self, affine):
         norm = ((affine[:, 0:1].pow(2) + affine[:, 1:2].pow(2)).sqrt() + self.affine_eps).expand(affine.size(0), 4)
@@ -29,16 +32,19 @@ class FourierFeatures2d(nn.Module):
 
         coord_h, coord_w = self.coord_h.unsqueeze(0), self.coord_w.unsqueeze(0)
 
-        coord_h = coord_h - (affine[:, 3] * self.lf) # shift
-        coord_w = coord_w - (affine[:, 2] * self.lf) 
-        
-        _coord_h = -coord_w * affine[:, 1] + coord_h * affine[:, 0] # rotation
-        coord_w = coord_w * affine[:, 0] + coord_h * affine[:, 1]
-        coord_h = _coord_h
+        for op in reversed(self.op_order):
+            if op == 's' and self.allow_scaling:
+                coord_h = coord_h / nn.functional.threshold(affine[:, 5], 1.0, 1.0) # scale
+                coord_w = coord_w / nn.functional.threshold(affine[:, 4], 1.0, 1.0)
 
-        if self.allow_scaling:
-            coord_h = coord_h / nn.functional.threshold(affine[:, 5], 1.0, 1.0) # scale
-            coord_w = coord_w / nn.functional.threshold(affine[:, 4], 1.0, 1.0)
+            elif op == 't' and self.allow_scaling:
+                coord_h = coord_h - (affine[:, 3] * self.lf) # shift
+                coord_w = coord_w - (affine[:, 2] * self.lf) 
+            
+            elif op == 'r':
+                _coord_h = -coord_w * affine[:, 1] + coord_h * affine[:, 0] # rotation
+                coord_w = coord_w * affine[:, 0] + coord_h * affine[:, 1]
+                coord_h = _coord_h
 
         coord_h = torch.cat((torch.sin(coord_h), torch.cos(coord_h)), 1)
         coord_w = torch.cat((torch.sin(coord_w), torch.cos(coord_w)), 1)
