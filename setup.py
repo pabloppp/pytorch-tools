@@ -4,7 +4,7 @@ setup(
     name='torchtools',
     packages=find_packages(),
     description='PyTorch useful tools',
-    version='0.2.13',
+    version='0.2.14',
     url='https://github.com/pabloppp/pytorch-tools',
     author='Pablo Pernías',
     author_email='pablo@pernias.com',
@@ -13,6 +13,11 @@ setup(
     install_requires=[
         'torch==1.*',
         'torchvision',
-        'numpy==1.*'
-    ]
+        'numpy==1.*',
+        'ninja==1.*'
+    ],
+    package_data={
+        'stylegan2.tools': ['torchtools/nn/stylegan2/*'],
+    },
+    include_package_data=True,
 )

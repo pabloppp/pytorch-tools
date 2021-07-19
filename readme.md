@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.13), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.13 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.14), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.14 -U
 ```
 
 # Current available tools
@@ -163,6 +163,42 @@ Example of use:
 from torchtools.nn import Mish
 
 # Then you can just use Mish as a replacement for any activation function, like ReLU
+```
+
+### AliasFreeActivation
+Implementation based on https://github.com/rosinality/alias-free-gan-pytorch/blob/main/model.py#L225 by Rosinality
+I modularized this activation so it can be easily used inside of any model without having to deal with complex initialization.
+
+This activation actually takes a lot of responsibility, since it internally defines the channels and size of the input based on a set of parameters, instead of receiving them as a parameter, this means that the rest of the layers (convolutions, positional embedding, etc...) must adapt to it.
+
+Example of use:
+```python
+from torchtools.nn import AliasFreeActivation, EqualLeakyReLU
+
+# We can use the static function to get the filter parameters for a specific level. 
+# It can be specially usefull to obtain the initial size and channels.
+max_size, max_channels = 256, 512
+first_channels, first_size = AliasFreeActivation.alias_level_params(
+	0, max_levels=14, max_size=max_size, max_channels=max_channels
+)[-2:]
+
+class MyModel(nn.Module):
+	def __init__(self, level, max_levels=14, max_size=256, max_channels=512, margin=10):
+		...
+		# AdaIN will require the style vector to be 2*size
+		leaky_relu = EqualLeakyReLU(negative_slope=0.2)
+		self.activation = AliasFreeActivation(
+			leaky_relu, level, max_levels=max_levels, max_size=max_size, max_channels=max_channels, margin=margin
+		)
+		self.conv = nn.Conv2d(self.activation.channels_prev, self.activation.channels, kernel_size=3, padding=1)
+		...
+	
+	def forward(self, x): # x the channels and size of X are dependent on  the level of this module.
+		...
+		x = self.conv(x)
+		x = self.activation(x)
+		...
+
 ```
 
 ## Layers

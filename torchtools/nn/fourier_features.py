@@ -5,7 +5,12 @@ import math
 class FourierFeatures2d(nn.Module):
     def __init__(self, size, dim, cutoff, affine_eps=1e-8, freq_range=[-0.5, 0.5], w_scale=0, allow_scaling=False, op_order=['r', 't', 's']):
         super().__init__()
+        self.size = size
+        self.dim = dim
+        self.cutoff = cutoff
+        self.freq_range = freq_range
         self.affine_eps = affine_eps
+        self.w_scale = w_scale
         coords = torch.linspace(freq_range[0], freq_range[1], size+1)[:-1]
         freqs = torch.linspace(0, cutoff, dim // 4)
         if w_scale > 0:
@@ -51,3 +56,11 @@ class FourierFeatures2d(nn.Module):
 
         coords = torch.cat((coord_h, coord_w), 1)
         return coords
+
+    def extra_repr(self):
+        info_string = f'size={self.size}, dim={self.dim}, cutoff={self.cutoff}, freq_range={self.freq_range}'
+        if self.w_scale > 0:
+            info_string += f', w_scale={self.w_scale}'
+        if self.allow_scaling:
+            info_string += f', allow_scaling={self.allow_scaling}'
+        return info_string 
