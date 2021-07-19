@@ -37,7 +37,7 @@ class FourierFeatures2d(nn.Module):
                 coord_h = coord_h / nn.functional.threshold(affine[:, 5], 1.0, 1.0) # scale
                 coord_w = coord_w / nn.functional.threshold(affine[:, 4], 1.0, 1.0)
 
-            elif op == 't' and self.allow_scaling:
+            elif op == 't':
                 coord_h = coord_h - (affine[:, 3] * self.lf) # shift
                 coord_w = coord_w - (affine[:, 2] * self.lf) 
             
