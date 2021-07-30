@@ -88,7 +88,7 @@ class AliasFreeActivation(nn.Module):
         x = self._upsample(x, self.up_filter, 2*self.scale_factor, pad=self.up_pad)
         x = self.activation(x)
         x = self._downsample(x, self.down_filter, 2, pad=self.down_pad)
-        if self.scale_factor > 1:
+        if self.scale_factor > 1 and self.margin > 0:
             m = self.scale_factor * self.margin // 2
             x = x[:, :, m:-m, m:-m]
         return x
