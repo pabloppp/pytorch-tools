@@ -43,7 +43,7 @@ class AliasFreeActivation(nn.Module):
         self.margin = margin
 
     @staticmethod
-    def alias_level_params(level, max_levels, max_size, max_channels, start_cutoff=2, critical_layers=2):
+    def alias_level_params(level, max_levels, max_size, max_channels, start_cutoff=2, critical_layers=2, base_channels=2**14):
         end_cutoff = max_size//2
         cutoff = start_cutoff * (end_cutoff / start_cutoff) ** min(level / (max_levels - critical_layers), 1)
 
@@ -53,7 +53,7 @@ class AliasFreeActivation(nn.Module):
 
         size = 2 ** math.ceil(math.log(min(2 * stopband, max_size), 2))
         band_half = max(stopband, size / 2) - cutoff
-        channels = min(round((2 ** max_levels) / size), max_channels)
+        channels = min(round(base_channels / size), max_channels)
 
         return cutoff, stopband, band_half, channels, size
 
