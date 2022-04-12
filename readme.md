@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.14), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.14 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.15), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.15 -U
 ```
 
 # Current available tools
@@ -173,7 +173,8 @@ This activation actually takes a lot of responsibility, since it internally defi
 
 Example of use:
 ```python
-from torchtools.nn import AliasFreeActivation, EqualLeakyReLU
+from torchtools.nn.alias_free_activation import AliasFreeActivation
+from torchtools.nn import EqualLeakyReLU
 
 # We can use the static function to get the filter parameters for a specific level. 
 # It can be specially usefull to obtain the initial size and channels.
