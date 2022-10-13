@@ -41,12 +41,12 @@ class VectorQuantize(nn.Module):
 	def idx2vq(self, idx, dim=-1):
 		q_idx = self.codebook(idx)
 		if dim != -1:
-			q_idx = q_idx.transpose(-1, dim)
+			q_idx = q_idx.movedim(-1, dim)
 		return q_idx
 
 	def forward(self, x, get_losses=True, dim=-1):
 		if dim != -1:
-			x = x.transpose(dim, -1)
+			x = torch.movedim(dim, -1)
 		z_e_x = x.contiguous().view(-1, x.size(-1)) if len(x.shape) > 2 else x
 		z_q_x, indices = self.vq(z_e_x, self.codebook.weight.detach())	
 		vq_loss, commit_loss = None, None	
@@ -60,7 +60,7 @@ class VectorQuantize(nn.Module):
 
 		z_q_x = z_q_x.view(x.shape)
 		if dim != -1:
-			z_q_x = z_q_x.transpose(dim, -1)
+			x = torch.movedim(-1, dim)
 		return z_q_x, (vq_loss, commit_loss), indices.view(x.shape[:-1])
 
 class Binarize(nn.Module):

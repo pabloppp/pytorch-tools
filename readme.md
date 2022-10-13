@@ -14,7 +14,7 @@ Numpy >= 1.0.0
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
 # if you want to install a specific version to avoid breaking changes (for example, v0.2.15), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.15 -U
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.16 -U
 ```
 
 # Current available tools
@@ -422,7 +422,7 @@ When **creating a new instance of the module**, it accepts the following paramet
   - **k**: the size of the codebook, or number of embeddings. 
   - **ema_decay** (default=0.99): the Exponentially Moving Average decay used (this only will be used if ema_loss is True)
   - **ema_loss** (default=False): Enables Exponentially Moving Average update of the codebook (instead of relying on gradient descent as EMA converges faster) 
-  
+
 When **calling the forward method** of the module, it accepts the following parameters:
   - **x**: this is the tensor you want to quantize, make sure the dimension that you want to quantize (by default is the last one) matches embedding_size defined when instantiating the module
   - **get_losses** (default=True): when False, the vq_loss and commit_loss components of the output will both be None, this should speed up a little bit the model when used for inference.
