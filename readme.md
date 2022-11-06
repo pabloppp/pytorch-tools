@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.15), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.16 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.17), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.17 -U
 ```
 
 # Current available tools
@@ -490,4 +490,55 @@ class MyModel(nn.Module):
 
 
 ```
+
+## Diffusion
+
+### Diffuzz
+Custom (non-cached) continuous forward/backward diffusion.
+It's not SUPER performant since it calculates all the required values on the fly instead of caching them, but in general I think this will not make an extremely big difference in terms of performance, simplifies a lot the code, and removes the concept of having a fixed number of timesteps for the forward diffusion (since I always found it weird to train a model with 1000 possible for ward diffusion steps, and then using way less steps during inference) by using a continuous value between 0 and 1 to decide how much noise we'll be adding to the output.
+
+During sampling, the same applies, instead of having a fixed number of steps, the diffuzz module will accept a noised input, a couple of values t & t_prev (between 0 and 1) and a predicted noise, and it will try to remove such noise in a scale such as to go from step t to step t_prev, so if we want to denoise in 10 steps we'll tell it to go from 1.0 to 0.9, then to 0.8, etc... while if we want to denoise in 100 steps, we'll start at 1.0 and go to 0.99, then to 0.98, etc... 
+
+Example of use during training:
+```python
+from torchtools.utils import Diffuzz
+device = "cuda"
+
+diffuzz = Diffuzz(device=device)
+custom_unet = CustomUnet().to(device) # Custom model whith output size = input size
+
+input_tensor = torch.randn(8, 3, 16, 16, device=device) # an image, audio signal, or whatever...
+
+t = torch.rand(input_tensor.size(0), device=device) # get a tensor with batch_size of values between 0 and 1
+noised_tensor, noise = diffuzz.diffuse(input_tensor, t)
+
+predicted_noise = custom_unet(noised_tensor, t)
+loss = nn.functional.mse_loss(predicted_noise, noise)
+
+# Optionally the diffuzz module provides loss gamma weighting (untested) but for this to work the loss 
+# should not be averaged on the batch dimension before applying it.
+
+# loss = nn.functional.mse_loss(predicted_noise, noise, reduction='none').mean(dim=[1, 2, 3])
+# loss = (loss * diffuzz.p2_weight(t)).mean()
+
+```
+
+Example of use for sampling:
+```python
+from torchtools.utils import Diffuzz
+device = "cuda"
+
+timesteps = 20
+
+x = torch.rand(8, 3, 16, 16, device=device)
+t_vals = torch.linspace(1.0, 0.0, timesteps+1)[:, None].to(device)
+for i in range(len(t_vals)-1):
+	t = torch.ones(x.size(0), device=device) * t_vals[i]
+	t_next = torch.ones(x.size(0), device=device) * t_vals[i+1]
+
+	pred_noise = custom_unet(x, t)
+	x = diffuzz.undiffuse(x, t, t_next, pred_noise
+```
+
+the `undiffuse` method accepts a `mode` parameter, currently only `ddpm` (default) and `ddim` are supported, but I'm planning on adding more, very likely by borrowing (and appropriately citing) code from this repo https://github.com/ozanciga/diffusion-for-beginners
 
