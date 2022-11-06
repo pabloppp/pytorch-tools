@@ -495,7 +495,7 @@ class MyModel(nn.Module):
 
 ### Diffuzz
 Custom (non-cached) continuous forward/backward diffusion.
-It's not SUPER performant since it calculates all the required values on the fly instead of caching them, but in general I think this will not make an extremely big difference in terms of performance, simplifies a lot the code, and removes the concept of having a fixed number of timesteps for the forward diffusion (since I always found it weird to train a model with 1000 possible for ward diffusion steps, and then using way less steps during inference) by using a continuous value between 0 and 1 to decide how much noise we'll be adding to the output.
+It's not SUPER performant since it calculates all the required values on the fly instead of caching them, but in general I think this will not make an extremely big difference in terms of performance, simplifies a lot the code, and removes the concept of having a fixed number of timesteps for the forward diffusion (since I always found it weird to train a model assuming 1000 forward diffusion steps, and then using way less steps during inference) by using a continuous value between 0 and 1 to decide how much noise we'll be adding to the output (1 being pure gaussian noise).
 
 During sampling, the same applies, instead of having a fixed number of steps, the diffuzz module will accept a noised input, a couple of values t & t_prev (between 0 and 1) and a predicted noise, and it will try to remove such noise in a scale such as to go from step t to step t_prev, so if we want to denoise in 10 steps we'll tell it to go from 1.0 to 0.9, then to 0.8, etc... while if we want to denoise in 100 steps, we'll start at 1.0 and go to 0.99, then to 0.98, etc... 
 
@@ -531,13 +531,13 @@ device = "cuda"
 timesteps = 20
 
 x = torch.rand(8, 3, 16, 16, device=device)
-t_vals = torch.linspace(1.0, 0.0, timesteps+1)[:, None].to(device)
-for i in range(len(t_vals)-1):
+t_vals = torch.linspace(1.0, 0.0, timesteps+1).to(device)
+for i in range(timesteps):
 	t = torch.ones(x.size(0), device=device) * t_vals[i]
 	t_next = torch.ones(x.size(0), device=device) * t_vals[i+1]
 
 	pred_noise = custom_unet(x, t)
-	x = diffuzz.undiffuse(x, t, t_next, pred_noise
+	x = diffuzz.undiffuse(x, t, t_next, pred_noise, mode='ddpm')
 ```
 
 the `undiffuse` method accepts a `mode` parameter, currently only `ddpm` (default) and `ddim` are supported, but I'm planning on adding more, very likely by borrowing (and appropriately citing) code from this repo https://github.com/ozanciga/diffusion-for-beginners
