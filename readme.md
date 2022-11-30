@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.17), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.17 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.18), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.18 -U
 ```
 
 # Current available tools
@@ -528,17 +528,12 @@ Example of use for sampling:
 from torchtools.utils import Diffuzz
 device = "cuda"
 
-timesteps = 20
-
-x = torch.rand(8, 3, 16, 16, device=device)
-t_vals = torch.linspace(1.0, 0.0, timesteps+1).to(device)
-for i in range(timesteps):
-	t = torch.ones(x.size(0), device=device) * t_vals[i]
-	t_next = torch.ones(x.size(0), device=device) * t_vals[i+1]
-
-	pred_noise = custom_unet(x, t)
-	x = diffuzz.undiffuse(x, t, t_next, pred_noise, mode='ddpm')
+sampled = diffuzz.sample(
+	custom_unet, {'c': conditioning}, 
+	(conditioning.size(0), 3, 16, 16),
+	timesteps=20, sampler='ddim'
+)[-1]
 ```
 
-the `undiffuse` method accepts a `mode` parameter, currently only `ddpm` (default) and `ddim` are supported, but I'm planning on adding more, very likely by borrowing (and appropriately citing) code from this repo https://github.com/ozanciga/diffusion-for-beginners
+the `sample` method accepts a `sampler` parameter, currently only `ddpm` (default) and `ddim` are implemented, but I'm planning on adding more, very likely by borrowing (and appropriately citing) code from this repo https://github.com/ozanciga/diffusion-for-beginners
 
