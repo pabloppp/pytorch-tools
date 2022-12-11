@@ -87,14 +87,20 @@ sampler_dict = {
 
 # Custom simplified foward/backward diffusion (cosine schedule)
 class Diffuzz():
-    def __init__(self, s=0.008, device="cpu"):
+    def __init__(self, s=0.008, device="cpu", cache_steps=None):
         self.device = device
         self.s = torch.tensor([s]).to(device)
         self._init_alpha_cumprod = torch.cos(self.s / (1 + self.s) * torch.pi * 0.5) ** 2
+        self.cached_steps = None
+        if cache_steps is not None:
+            self.cached_steps = self._alpha_cumprod(torch.linspace(0, 1, cache_steps, device=device))
 
     def _alpha_cumprod(self, t):
-        alpha_cumprod = torch.cos((t + self.s) / (1 + self.s) * torch.pi * 0.5) ** 2 / self._init_alpha_cumprod
-        return alpha_cumprod.clamp(0.0001, 0.9999)
+        if self.cached_steps is None:
+            alpha_cumprod = torch.cos((t + self.s) / (1 + self.s) * torch.pi * 0.5) ** 2 / self._init_alpha_cumprod
+            return alpha_cumprod.clamp(0.0001, 0.9999)
+        else:
+            return self.cached_steps[t.mul(len(self.cached_steps)-1).long()]
 
     def diffuse(self, x, t, noise=None): # t -> [0, 1]
         if noise is None:
