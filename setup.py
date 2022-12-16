@@ -4,7 +4,7 @@ setup(
     name='torchtools',
     packages=find_packages(),
     description='PyTorch useful tools',
-    version='0.2.19',
+    version='0.2.20',
     url='https://github.com/pabloppp/pytorch-tools',
     author='Pablo Pernías',
     author_email='pablo@pernias.com',
