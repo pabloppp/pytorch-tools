@@ -98,7 +98,7 @@ class Diffuzz():
     def _alpha_cumprod(self, t):
         if self.cached_steps is None:
             alpha_cumprod = torch.cos((t + self.s) / (1 + self.s) * torch.pi * 0.5) ** 2 / self._init_alpha_cumprod
-            return alpha_cumprod.clamp(min=2.4289e-9)
+            return alpha_cumprod.clamp(2.4287349909002387e-09, 0.9999586939811707) # obtained by getting betas, clamping to [0, 0.999] and getting alpha_cumprod again
         else:
             return self.cached_steps[t.mul(len(self.cached_steps)-1).long()]
 
