@@ -118,8 +118,8 @@ class Diffuzz():
             sampler = DDPMSampler(self)
         return sampler(x, t, t_prev, noise)
 
-    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, unconditional_inputs=None, sampler='ddpm'):
-        r_range = torch.linspace(t_start, t_end, timesteps+1)[:, None].expand(-1, shape[0] if x_init is None else x_init.size(0)).to(self.device)
+    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, unconditional_inputs=None, sampler='ddpm', half=False):
+        r_range = torch.linspace(t_start, t_end, timesteps+1)[:, None].expand(-1, shape[0] if x_init is None else x_init.size(0)).to(self.device)            
         if isinstance(sampler, str):
             if sampler in sampler_dict:
                 sampler = sampler_dict[sampler](self)
@@ -131,6 +131,9 @@ class Diffuzz():
             raise ValueError("Sampler should be either a string or a SimpleSampler object.")
         preds = []
         x = sampler.init_x(shape) if x_init is None or mask is not None else x_init.clone()
+        if half:
+            r_range = r_range.half()
+            x = x.half()
         for i in range(0, timesteps):
             if mask is not None and x_init is not None:
                 x_renoised, _ = self.diffuse(x_init, r_range[i])
