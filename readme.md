@@ -13,8 +13,8 @@ Numpy >= 1.0.0
 # In order to install the latest (beta) use
 pip install git+https://github.com/pabloppp/pytorch-tools -U
 
-# if you want to install a specific version to avoid breaking changes (for example, v0.2.26), use 
-pip install git+https://github.com/pabloppp/pytorch-tools@0.2.26 -U
+# if you want to install a specific version to avoid breaking changes (for example, v0.2.27), use 
+pip install git+https://github.com/pabloppp/pytorch-tools@0.2.27 -U
 ```
 
 # Current available tools
