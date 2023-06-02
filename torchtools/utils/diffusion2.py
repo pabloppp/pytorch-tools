@@ -154,3 +154,7 @@ class Diffuzz2():
     def p2_weight(self, t, k=1.0, gamma=1.0):
         alpha_cumprod = self._alpha_cumprod(t)
         return (k + alpha_cumprod / (1 - alpha_cumprod)) ** -gamma
+    
+    def truncated_snr_weight(self, t, k=1.0):
+         alpha_cumprod = self._alpha_cumprod(t)
+         return (alpha_cumprod / (1 - alpha_cumprod)).clamp(min=k)
