@@ -27,16 +27,16 @@ class DDPMSampler(SimpleSampler):
 
         sigma_tau = ((1 - alpha_cumprod_prev) / (1 - alpha_cumprod)).sqrt() * (1 - alpha_cumprod / alpha_cumprod_prev).sqrt()
         if self.mode == 'v':
-            x0 = alpha_cumprod * x - (1-alpha_cumprod).sqrt() * pred
-            noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod * pred
+            x0 = alpha_cumprod.sqrt() * x - (1-alpha_cumprod).sqrt() * pred
+            noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod.sqrt() * pred
         elif self.mode == 'x':
             x0 = pred
-            noise = (x - x0 * (alpha_cumprod).sqrt()) / (1 - alpha_cumprod).sqrt()
+            noise = (x - x0 * alpha_cumprod.sqrt()) / (1 - alpha_cumprod).sqrt()
         else:
             noise = pred
-            x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / (alpha_cumprod).sqrt()
-        dp_xt = (1 - alpha_cumprod_prev).sqrt()
-        return x0, (alpha_cumprod_prev).sqrt() * x0 + dp_xt * noise + sigma_tau * torch.randn_like(x), pred
+            x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / alpha_cumprod.sqrt()
+        renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev).sqrt() * noise + sigma_tau * torch.randn_like(x)
+        return x0, renoised, pred
 
 # https://github.com/ozanciga/diffusion-for-beginners/blob/main/samplers/ddim.py
 class DDIMSampler(SimpleSampler):
@@ -45,16 +45,16 @@ class DDIMSampler(SimpleSampler):
         alpha_cumprod_prev = self.diffuzz._alpha_cumprod(t_prev).view(t_prev.size(0), *[1 for _ in x.shape[1:]])
 
         if self.mode == 'v':
-            x0 = alpha_cumprod * x - (1-alpha_cumprod).sqrt() * pred
-            noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod * pred
+            x0 = alpha_cumprod.sqrt() * x - (1-alpha_cumprod).sqrt() * pred
+            noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod.sqrt() * pred
         elif self.mode == 'x':
             x0 = pred
-            noise = (x - x0 * (alpha_cumprod).sqrt()) / (1 - alpha_cumprod).sqrt()
+            noise = (x - x0 * alpha_cumprod.sqrt()) / (1 - alpha_cumprod).sqrt()
         else:
             noise = pred
-            x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / (alpha_cumprod).sqrt()
-        dp_xt = (1 - alpha_cumprod_prev).sqrt()
-        return x0, (alpha_cumprod_prev).sqrt() * x0 + dp_xt * noise, pred
+            x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / alpha_cumprod.sqrt()
+        renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev).sqrt() * noise
+        return x0, renoised, pred
 
 sampler_dict = {
     'ddpm': DDPMSampler,
@@ -97,11 +97,11 @@ class Diffuzz2():
     
     def x0_from_v(self, noised, pred_v, t):
         alpha_cumprod = self._alpha_cumprod(t).view(t.size(0), *[1 for _ in noised.shape[1:]])
-        return alpha_cumprod * noised - (1-alpha_cumprod).sqrt() * pred_v
+        return alpha_cumprod.sqrt() * noised - (1-alpha_cumprod).sqrt() * pred_v
 
     def noise_from_v(self, noised, pred_v, t):
         alpha_cumprod = self._alpha_cumprod(t).view(t.size(0), *[1 for _ in noised.shape[1:]])
-        return (1-alpha_cumprod).sqrt() * noised + alpha_cumprod * pred_v
+        return (1-alpha_cumprod).sqrt() * noised + alpha_cumprod.sqrt() * pred_v
 
     def undiffuse(self, x, t, t_prev, pred, sampler=None):
         if sampler is None:
