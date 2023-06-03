@@ -35,7 +35,7 @@ class DDPMSampler(SimpleSampler):
         else:
             noise = pred
             x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / alpha_cumprod.sqrt()
-        renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev).sqrt() * noise + sigma_tau * torch.randn_like(x)
+        renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev - sigma_tau ** 2).sqrt() * noise + sigma_tau * torch.randn_like(x)
         return x0, renoised, pred
 
 # https://github.com/ozanciga/diffusion-for-beginners/blob/main/samplers/ddim.py
