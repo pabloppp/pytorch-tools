@@ -20,12 +20,13 @@ class SimpleSampler():
     def step(self, x, t, t_prev, noise):
         raise NotImplementedError("You should override the 'apply' function.")
 
-class DDPMSampler(SimpleSampler):
-    def step(self, x, t, t_prev, pred):
+# https://github.com/ozanciga/diffusion-for-beginners/blob/main/samplers/ddim.py
+class DDIMSampler(SimpleSampler):
+    def step(self, x, t, t_prev, pred, eta=0):
         alpha_cumprod = self.diffuzz._alpha_cumprod(t).view(t.size(0), *[1 for _ in x.shape[1:]])
         alpha_cumprod_prev = self.diffuzz._alpha_cumprod(t_prev).view(t_prev.size(0), *[1 for _ in x.shape[1:]])
 
-        sigma_tau = ((1 - alpha_cumprod_prev) / (1 - alpha_cumprod)).sqrt() * (1 - alpha_cumprod / alpha_cumprod_prev).sqrt()
+        sigma_tau = eta * ((1 - alpha_cumprod_prev) / (1 - alpha_cumprod)).sqrt() * (1 - alpha_cumprod / alpha_cumprod_prev).sqrt() if eta > 0 else 0
         if self.mode == 'v':
             x0 = alpha_cumprod.sqrt() * x - (1-alpha_cumprod).sqrt() * pred
             noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod.sqrt() * pred
@@ -38,23 +39,9 @@ class DDPMSampler(SimpleSampler):
         renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev - sigma_tau ** 2).sqrt() * noise + sigma_tau * torch.randn_like(x)
         return x0, renoised, pred
 
-# https://github.com/ozanciga/diffusion-for-beginners/blob/main/samplers/ddim.py
-class DDIMSampler(SimpleSampler):
-    def step(self, x, t, t_prev, pred):
-        alpha_cumprod = self.diffuzz._alpha_cumprod(t).view(t.size(0), *[1 for _ in x.shape[1:]])
-        alpha_cumprod_prev = self.diffuzz._alpha_cumprod(t_prev).view(t_prev.size(0), *[1 for _ in x.shape[1:]])
-
-        if self.mode == 'v':
-            x0 = alpha_cumprod.sqrt() * x - (1-alpha_cumprod).sqrt() * pred
-            noise = (1-alpha_cumprod).sqrt() * x + alpha_cumprod.sqrt() * pred
-        elif self.mode == 'x':
-            x0 = pred
-            noise = (x - x0 * alpha_cumprod.sqrt()) / (1 - alpha_cumprod).sqrt()
-        else:
-            noise = pred
-            x0 = (x - (1 - alpha_cumprod).sqrt() * noise) / alpha_cumprod.sqrt()
-        renoised = alpha_cumprod_prev.sqrt() * x0 + (1 - alpha_cumprod_prev).sqrt() * noise
-        return x0, renoised, pred
+class DDPMSampler(DDIMSampler):
+    def step(self, x, t, t_prev, pred, eta=1):
+        return super().step(x, t, t_prev, pred, eta)
 
 sampler_dict = {
     'ddpm': DDPMSampler,
@@ -103,12 +90,12 @@ class Diffuzz2():
         alpha_cumprod = self._alpha_cumprod(t).view(t.size(0), *[1 for _ in noised.shape[1:]])
         return (1-alpha_cumprod).sqrt() * noised + alpha_cumprod.sqrt() * pred_v
 
-    def undiffuse(self, x, t, t_prev, pred, sampler=None):
+    def undiffuse(self, x, t, t_prev, pred, sampler=None, **kwargs):
         if sampler is None:
             sampler = DDPMSampler(self)
-        return sampler(x, t, t_prev, pred)
+        return sampler(x, t, t_prev, pred, **kwargs)
 
-    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, cfg_rho=0.7, unconditional_inputs=None, sampler='ddpm', dtype=None, sample_mode='v'):
+    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, cfg_rho=0.7, unconditional_inputs=None, sampler='ddpm', dtype=None, sample_mode='v', sampler_params={}):
         r_range = torch.linspace(t_start, t_end, timesteps+1)[:, None].expand(-1, shape[0] if x_init is None else x_init.size(0)).to(self.device)            
         if isinstance(sampler, str):
             if sampler in sampler_dict:
@@ -139,7 +126,7 @@ class Diffuzz2():
                     pred = cfg_rho * (pred_cfg * std_pos/(std_cfg+1e-9)) + pred_cfg * (1-cfg_rho)
                 else:
                     pred = pred_cfg
-            diff_out = self.undiffuse(x, r_range[i], r_range[i+1], pred, sampler=sampler)
+            diff_out = self.undiffuse(x, r_range[i], r_range[i+1], pred, sampler=sampler, **sampler_params)
             x = diff_out[1]
             altered_vars = yield diff_out
             
@@ -150,11 +137,17 @@ class Diffuzz2():
                 sampler = altered_vars.get('sampler', sampler)
                 unconditional_inputs = altered_vars.get('unconditional_inputs', unconditional_inputs)
                 model_inputs = altered_vars.get('model_inputs', model_inputs)
+                x = altered_vars.get('x', x)
+                mask = altered_vars.get('mask', mask)
+                x_init = altered_vars.get('x_init', x_init)
         
     def p2_weight(self, t, k=1.0, gamma=1.0):
         alpha_cumprod = self._alpha_cumprod(t)
         return (k + alpha_cumprod / (1 - alpha_cumprod)) ** -gamma
     
-    def truncated_snr_weight(self, t, k=1.0):
-         alpha_cumprod = self._alpha_cumprod(t)
-         return (alpha_cumprod / (1 - alpha_cumprod)).clamp(min=k)
+    def truncated_snr_weight(self, t, min=1.0, max=None):
+        alpha_cumprod = self._alpha_cumprod(t)
+        srn = (alpha_cumprod / (1 - alpha_cumprod))
+        if min != None or max != None:
+            srn = srn.clamp(min=min, max=max)
+        return srn
