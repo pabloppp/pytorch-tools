@@ -4,7 +4,7 @@ setup(
     name='torchtools',
     packages=find_packages(),
     description='PyTorch useful tools',
-    version='0.3.4',
+    version='0.3.5',
     url='https://github.com/pabloppp/pytorch-tools',
     author='Pablo Pernías',
     author_email='pablo@pernias.com',
@@ -18,6 +18,7 @@ setup(
     ],
     package_data={
         'stylegan2.tools': ['torchtools/nn/stylegan2/*'],
+        'transforms.models': ['torchtools/transforms/models/*']
     },
     include_package_data=True,
 )
