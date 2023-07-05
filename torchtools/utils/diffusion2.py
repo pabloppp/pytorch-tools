@@ -64,11 +64,19 @@ class Diffuzz2():
         if self.cached_steps is None:
             alpha_cumprod = torch.cos((t + self.s) / (1 + self.s) * torch.pi * 0.5).clamp(0, 1) ** 2 / self._init_alpha_cumprod
             alpha_cumprod = alpha_cumprod.clamp(self.clamp_range[0], self.clamp_range[1])
-            if self.scaler != 0:
+            if self.scaler != 1:
                 alpha_cumprod = (alpha_cumprod/(1-alpha_cumprod)).log().add(self.scaler).sigmoid().clamp(self.clamp_range[0], self.clamp_range[1])
             return alpha_cumprod
         else:
             return self.cached_steps[t.mul(len(self.cached_steps)-1).long()]
+
+    def scale_t(self, t, scaler):
+        scaler = 2 * np.log(1/scaler)
+        alpha_cumprod = torch.cos((t + self.s) / (1 + self.s) * torch.pi * 0.5).clamp(0, 1) ** 2 / self._init_alpha_cumprod
+        alpha_cumprod = alpha_cumprod.clamp(self.clamp_range[0], self.clamp_range[1])
+        if scaler != 1:
+            alpha_cumprod = (alpha_cumprod/(1-alpha_cumprod)).log().add(scaler).sigmoid().clamp(self.clamp_range[0], self.clamp_range[1])
+        return (((alpha_cumprod * self._init_alpha_cumprod) ** 0.5).acos() / (torch.pi * 0.5)) * (1 + self.s) - self.s
 
     def diffuse(self, x, t, noise=None): # t -> [0, 1]
         if noise is None:
@@ -95,8 +103,10 @@ class Diffuzz2():
             sampler = DDPMSampler(self)
         return sampler(x, t, t_prev, pred, **kwargs)
 
-    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, cfg_rho=0.7, unconditional_inputs=None, sampler='ddpm', dtype=None, sample_mode='v', sampler_params={}):
+    def sample(self, model, model_inputs, shape, mask=None, t_start=1.0, t_end=0.0, timesteps=20, x_init=None, cfg=3.0, cfg_rho=0.7, unconditional_inputs=None, sampler='ddpm', dtype=None, sample_mode='v', sampler_params={}, t_scaler=1):
         r_range = torch.linspace(t_start, t_end, timesteps+1)[:, None].expand(-1, shape[0] if x_init is None else x_init.size(0)).to(self.device)            
+        if t_scaler != 1:
+            r_range = self.scale_t(r_range, t_scaler)
         if isinstance(sampler, str):
             if sampler in sampler_dict:
                 sampler = sampler_dict[sampler](self, sample_mode)
