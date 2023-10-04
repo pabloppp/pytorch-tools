@@ -121,21 +121,25 @@ class Diffuzz2():
         if dtype is not None:
             r_range = r_range.to(dtype)
             x = x.to(dtype)
+        if cfg is not None:
+            if unconditional_inputs is None:
+                unconditional_inputs = {k: torch.zeros_like(v) for k, v in model_inputs.items()}
+            model_inputs = {k:torch.cat([v, v_u]) if isinstance(v, torch.Tensor) else None for (k, v), (k_u, v_u) in zip(model_inputs.items(), unconditional_inputs.items())}
         for i in range(0, timesteps):
             if mask is not None and x_init is not None:
                 x_renoised, _ = self.diffuse(x_init, r_range[i])
                 x = x * mask + x_renoised * (1-mask)
-            pred = model(x, r_range[i], **model_inputs)
             if cfg is not None:
-                if unconditional_inputs is None:
-                    unconditional_inputs = {k: torch.zeros_like(v) for k, v in model_inputs.items()}
-                pred_unconditional = model(x, r_range[i], **unconditional_inputs)
+                pred, pred_unconditional = model(torch.cat([x] * 2), torch.cat([r_range[i]] * 2), **model_inputs).chunk(2)
                 pred_cfg = torch.lerp(pred_unconditional, pred, cfg)
                 if cfg_rho > 0:
                     std_pos, std_cfg = pred.std(),  pred_cfg.std()
                     pred = cfg_rho * (pred_cfg * std_pos/(std_cfg+1e-9)) + pred_cfg * (1-cfg_rho)
                 else:
                     pred = pred_cfg
+            else:
+                pred = model(x, r_range[i], **model_inputs)
+
             diff_out = self.undiffuse(x, r_range[i], r_range[i+1], pred, sampler=sampler, **sampler_params)
             x = diff_out[1]
             altered_vars = yield diff_out
