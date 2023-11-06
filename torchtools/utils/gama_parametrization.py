@@ -23,7 +23,7 @@ def gamma_reparam_model(model):
             apply_gamma_reparam(module, "in_proj_weight")
     return model
 
-def remove_parametrizations(model):
+def remove_gamma_parametrizations(model):
     for module in model.modules():
         if torch.nn.utils.parametrize.is_parametrized(module, "weight"):
             nn.utils.parametrize.remove_parametrizations(module, "weight")
