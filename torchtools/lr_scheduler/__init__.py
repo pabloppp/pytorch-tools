@@ -1,2 +1,2 @@
 from .delayed import DelayerScheduler, DelayedCosineAnnealingLR
-from .inverse_sqrt import InverseSquareRootLR
+from .inverse_sqrt import InverseSqrtLR
