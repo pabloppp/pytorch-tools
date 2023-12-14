@@ -9,7 +9,7 @@ class _WeigthNorm(nn.Module):
         
     def _normalize(self, w):
         norm_dims = list(range(1, len(w.shape)))
-        w_norm = torch.linalg.vector_norm(w, dim=norm_dims, keepdim=True)
+        w_norm = torch.linalg.vector_norm(w.detach(), dim=norm_dims, keepdim=True)
         return w / (w_norm + self.eps) 
 
     def forward(self, w):
