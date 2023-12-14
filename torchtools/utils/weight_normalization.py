@@ -10,14 +10,14 @@ class _WeigthNorm(nn.Module):
     def _normalize(self, w):
         norm_dims = list(range(1, len(w.shape)))
         w_norm = torch.linalg.vector_norm(w.detach(), dim=norm_dims, keepdim=True)
-        w = w / (w_norm + self.eps) 
-        return w
+        return w / (w_norm + self.eps) 
 
     def forward(self, w):
         if self.training:
             with torch.no_grad():
                 fan_in = w[0].numel()**0.5
-                w.copy_(self._normalize(w) * fan_in)
+                w.data = self._normalize(w.data) * fan_in
+                # w.copy_(self._normalize(w) * fan_in)
         return self._normalize(w)
 
 def apply_weight_norm(module, name="weight"): # this reparametrizes the parameters of a single module
