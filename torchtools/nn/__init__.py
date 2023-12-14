@@ -12,3 +12,4 @@ from .modulation import ModulatedConv2d
 from .equal_layers import EqualConv2d, EqualLeakyReLU, EqualLinear
 from .fourier_features import FourierFeatures2d
 # from .alias_free_activation import AliasFreeActivation
+from .standarized import LearnableWeightedSum, FixedWeightedSum
