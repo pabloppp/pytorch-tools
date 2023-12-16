@@ -24,15 +24,18 @@ def apply_weight_norm(module, name="weight"): # this reparametrizes the paramete
     nn.utils.parametrize.register_parametrization(module, name, _WeigthNorm())
     return module
 
-def weight_norm_model(model):
+def weight_norm_model(model, whitelist=None):
+    whitelist = whitelist or []
+
     def check_parameter(module, name):
         return hasattr(module, name) and not torch.nn.utils.parametrize.is_parametrized(module, name) and isinstance(getattr(module, name), nn.Parameter)
     
-    for module in model.modules(): # this reparametrizes all linear layers of the model
-        if check_parameter(module, "weight"):
-            apply_weight_norm(module)
-        elif check_parameter(module, "in_proj_weight"):
-            apply_weight_norm(module, 'in_proj_weight')
+    for name, module in model.named_modules(): # this reparametrizes all linear layers of the model
+        if not any([w in name for w in whitelist]):
+            if check_parameter(module, "weight"):
+                apply_weight_norm(module)
+            elif check_parameter(module, "in_proj_weight"):
+                apply_weight_norm(module, 'in_proj_weight')
     return model
 
 def remove_weight_norm(model):
