@@ -17,10 +17,3 @@ class Gain(nn.Module):
     def forward(self, x):
         return x * self.g
 
-class PixelNorm(nn.Module):
-    def __init__(self, dim=1):
-        super().__init__()
-        self.dim = dim
- 
-    def forward(self, x):
-        return x / (torch.sqrt(torch.mean(x ** 2, dim=self.dim, keepdim=True)) + 1e-4)
