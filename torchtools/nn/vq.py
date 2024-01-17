@@ -80,7 +80,7 @@ class Binarize(nn.Module):
 	
 # Finite Scalar Quantization: https://arxiv.org/abs/2309.15505
 class FSQ(nn.Module):
-	def __init__(self, bins, learnable_affine=True, dim=-1, eps=1e-7):
+	def __init__(self, bins, affine_in=True, affine_out=True, dim=-1, eps=1e-7):
 		super().__init__()
 		self.dim = dim
 		self.eps = eps
@@ -88,25 +88,30 @@ class FSQ(nn.Module):
 		self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
 		self.codebook_size = np.prod(bins)
 
-		self.shift = None
-		if learnable_affine:
-			self.shift = nn.Parameter(torch.zeros(len(bins)))
-			self.scale = nn.Parameter(torch.ones(len(bins)))
+		self.in_shift, self.out_shift = None, None
+		if affine_in:
+			self.in_shift = nn.Parameter(torch.zeros(len(bins)))
+			self.in_scale = nn.Parameter(torch.ones(len(bins)))
+		if affine_out:
+			self.out_shift = nn.Parameter(torch.zeros(len(bins)))
+			self.out_scale = nn.Parameter(torch.ones(len(bins)))
 
 	def _round(self, x, quantize):
 		scaled_bin = (self.bins - 1) / 2
 		offset = (self.bins % 2 == 0).float() * 0.5
+		if self.in_shift is not None:
+			x = x * self.in_scale + self.in_shift
 		x = x.tanh() * scaled_bin - offset
 		if quantize is True:
 			x = x + (x.round() - x).detach()
 		x = (x + offset) / scaled_bin
-		if self.shift is not None:
-			x = x * self.scale + self.shift
+		if self.out_shift is not None:
+			x = x * self.out_scale + self.out_shift
 		return x
 
 	def vq_to_idx(self, x):
-		if self.shift is not None:
-			x = (x - self.shift) / self.scale
+		if self.out_shift is not None:
+			x = (x - self.out_shift) / self.out_scale
 		x = (x + 1) / 2
 		x = (x * (self.bins - 1) * self.bases).sum(dim=-1).long()
 		return x
@@ -114,8 +119,8 @@ class FSQ(nn.Module):
 	def idx_to_vq(self, x):
 		x = x.unsqueeze(-1) // self.bases % self.bins
 		x = (x / (self.bins-1 - 1e-3)) * 2 - 1
-		if self.shift is not None:
-			x = x * self.scale + self.shift
+		if self.out_shift is not None:
+			x = x * self.out_scale + self.out_shift
 		return x
 
 	def forward(self, x, quantize=True):
