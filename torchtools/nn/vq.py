@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from .functional.vq import vector_quantize, binarize
+import numpy as np
 
 class VectorQuantize(nn.Module):
 	def __init__(self, embedding_size, k, ema_decay=0.99, ema_loss=False):
@@ -76,3 +77,53 @@ class Binarize(nn.Module):
 
 	def forward(self, x):
 		return self.bin(x, self.threshold)
+	
+# Finite Scalar Quantization: https://arxiv.org/abs/2309.15505
+class FSQ(nn.Module):
+    def __init__(self, bins, learnable_affine=True, dim=-1, eps=1e-7):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+        self.register_buffer('bins', torch.tensor(bins))
+        self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
+        self.codebook_size = np.prod(bins)
+
+        self.shift = None
+        if learnable_affine:
+            self.shift = nn.Parameter(torch.zeros(len(bins)))
+            self.scale = nn.Parameter(torch.ones(len(bins)))
+    
+    def _round(self, x):
+        scaled_bin = (self.bins - 1) / 2
+        offset = (self.bins % 2 == 0).float() * 0.5
+        x = x.tanh() * scaled_bin - offset
+        x = x + (x.round() - x).detach()
+        x = (x + offset) / scaled_bin
+        if self.shift is not None:
+            x = x * self.scale + self.shift
+        return x
+
+    def vq_to_idx(self, x):
+        if self.shift is not None:
+            x = (x - self.shift) / self.scale
+        x = (x + 1) / 2
+        x = (x * (self.bins - 1) * self.bases).sum(dim=-1).long()
+        return x
+
+    def idx_to_vq(self, x):
+        x = x.unsqueeze(-1) // self.bases % self.bins
+        x = (x / (self.bins-1 - 1e-3)) * 2 - 1
+        if self.shift is not None:
+            x = x * self.scale + self.shift
+        return x
+
+    def forward(self, x):
+        if self.dim != -1:
+            x = x.swapdims(self.dim, -1)
+
+        x = self._round(x)
+        idx = self.vq_to_idx(x)
+
+        if self.dim != -1:
+            x = x.swapdims(-1, self.dim)
+        return x, idx
