@@ -92,12 +92,13 @@ class FSQ(nn.Module):
         if learnable_affine:
             self.shift = nn.Parameter(torch.zeros(len(bins)))
             self.scale = nn.Parameter(torch.ones(len(bins)))
-    
-    def _round(self, x):
+
+    def _round(self, x, quantize):
         scaled_bin = (self.bins - 1) / 2
         offset = (self.bins % 2 == 0).float() * 0.5
         x = x.tanh() * scaled_bin - offset
-        x = x + (x.round() - x).detach()
+        if quantize is True:
+			x = x + (x.round() - x).detach()
         x = (x + offset) / scaled_bin
         if self.shift is not None:
             x = x * self.scale + self.shift
@@ -117,11 +118,11 @@ class FSQ(nn.Module):
             x = x * self.scale + self.shift
         return x
 
-    def forward(self, x):
+    def forward(self, x, quantize=True):
         if self.dim != -1:
             x = x.swapdims(self.dim, -1)
 
-        x = self._round(x)
+        x = self._round(x, quantize=quantize)
         idx = self.vq_to_idx(x)
 
         if self.dim != -1:
