@@ -80,51 +80,51 @@ class Binarize(nn.Module):
 	
 # Finite Scalar Quantization: https://arxiv.org/abs/2309.15505
 class FSQ(nn.Module):
-    def __init__(self, bins, learnable_affine=True, dim=-1, eps=1e-7):
-        super().__init__()
-        self.dim = dim
-        self.eps = eps
-        self.register_buffer('bins', torch.tensor(bins))
-        self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
-        self.codebook_size = np.prod(bins)
+	def __init__(self, bins, learnable_affine=True, dim=-1, eps=1e-7):
+		super().__init__()
+		self.dim = dim
+		self.eps = eps
+		self.register_buffer('bins', torch.tensor(bins))
+		self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
+		self.codebook_size = np.prod(bins)
 
-        self.shift = None
-        if learnable_affine:
-            self.shift = nn.Parameter(torch.zeros(len(bins)))
-            self.scale = nn.Parameter(torch.ones(len(bins)))
+		self.shift = None
+		if learnable_affine:
+			self.shift = nn.Parameter(torch.zeros(len(bins)))
+			self.scale = nn.Parameter(torch.ones(len(bins)))
 
-    def _round(self, x, quantize):
-        scaled_bin = (self.bins - 1) / 2
-        offset = (self.bins % 2 == 0).float() * 0.5
-        x = x.tanh() * scaled_bin - offset
-        if quantize is True:
+	def _round(self, x, quantize):
+		scaled_bin = (self.bins - 1) / 2
+		offset = (self.bins % 2 == 0).float() * 0.5
+		x = x.tanh() * scaled_bin - offset
+		if quantize is True:
 			x = x + (x.round() - x).detach()
-        x = (x + offset) / scaled_bin
-        if self.shift is not None:
-            x = x * self.scale + self.shift
-        return x
+		x = (x + offset) / scaled_bin
+		if self.shift is not None:
+			x = x * self.scale + self.shift
+		return x
 
-    def vq_to_idx(self, x):
-        if self.shift is not None:
-            x = (x - self.shift) / self.scale
-        x = (x + 1) / 2
-        x = (x * (self.bins - 1) * self.bases).sum(dim=-1).long()
-        return x
+	def vq_to_idx(self, x):
+		if self.shift is not None:
+			x = (x - self.shift) / self.scale
+		x = (x + 1) / 2
+		x = (x * (self.bins - 1) * self.bases).sum(dim=-1).long()
+		return x
 
-    def idx_to_vq(self, x):
-        x = x.unsqueeze(-1) // self.bases % self.bins
-        x = (x / (self.bins-1 - 1e-3)) * 2 - 1
-        if self.shift is not None:
-            x = x * self.scale + self.shift
-        return x
+	def idx_to_vq(self, x):
+		x = x.unsqueeze(-1) // self.bases % self.bins
+		x = (x / (self.bins-1 - 1e-3)) * 2 - 1
+		if self.shift is not None:
+			x = x * self.scale + self.shift
+		return x
 
-    def forward(self, x, quantize=True):
-        if self.dim != -1:
-            x = x.swapdims(self.dim, -1)
+	def forward(self, x, quantize=True):
+		if self.dim != -1:
+			x = x.swapdims(self.dim, -1)
 
-        x = self._round(x, quantize=quantize)
-        idx = self.vq_to_idx(x)
+		x = self._round(x, quantize=quantize)
+		idx = self.vq_to_idx(x)
 
-        if self.dim != -1:
-            x = x.swapdims(-1, self.dim)
-        return x, idx
+		if self.dim != -1:
+			x = x.swapdims(-1, self.dim)
+		return x, idx
