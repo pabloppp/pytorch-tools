@@ -80,56 +80,48 @@ class Binarize(nn.Module):
 	
 # Finite Scalar Quantization: https://arxiv.org/abs/2309.15505
 class FSQ(nn.Module):
-	def __init__(self, bins, affine_in=True, affine_out=True, dim=-1, eps=1e-7):
-		super().__init__()
-		self.dim = dim
-		self.eps = eps
-		self.register_buffer('bins', torch.tensor(bins))
-		self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
-		self.codebook_size = np.prod(bins)
+    def __init__(self, bins, dim=-1, eps=1e-1):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+        self.register_buffer('bins', torch.tensor(bins))
+        self.register_buffer('bases', torch.tensor([1] + np.cumprod(bins[:-1]).tolist()))
+        self.codebook_size = np.prod(bins)
+        
+        self.in_shift, self.out_shift = None, None
 
-		self.in_shift, self.out_shift = None, None
-		if affine_in:
-			self.in_shift = nn.Parameter(torch.zeros(len(bins)))
-			self.in_scale = nn.Parameter(torch.ones(len(bins)))
-		if affine_out:
-			self.out_shift = nn.Parameter(torch.zeros(len(bins)))
-			self.out_scale = nn.Parameter(torch.ones(len(bins)))
+    def _round(self, x, quantize):
+        x = x.sigmoid() * (1-1e-7)
+        if quantize is True:
+            x_rounded = x.sub(1/(self.bins*2)).mul(self.bins).round().div(self.bins).div(1-1/self.bins)
+            x = x + (x_rounded - x).detach()
+        x_sigmoid = x
+        x = (x / (1-1e-7)).logit(eps=self.eps)
+        return x, x_sigmoid
 
-	def _round(self, x, quantize):
-		scaled_bin = (self.bins - 1) / 2
-		offset = (self.bins % 2 == 0).float() * 0.5
-		if self.in_shift is not None:
-			x = x * self.in_scale + self.in_shift
-		x = x.tanh() * scaled_bin - offset
-		if quantize is True:
-			x = x + (x.round() - x).detach()
-		x = (x + offset) / scaled_bin
-		if self.out_shift is not None:
-			x = x * self.out_scale + self.out_shift
-		return x
+    def vq_to_idx(self, x, is_sigmoid=False):
+        if not is_sigmoid:
+            x = x.sigmoid() * (1-1e-7)
+            x = x.sub(1/(self.bins*2)).mul(self.bins).round().div(self.bins).div(1-1/self.bins)
+        x = x.mul(self.bins-1).long()
+        x = (x * self.bases).sum(dim=-1).long()
+        return x
 
-	def vq_to_idx(self, x):
-		if self.out_shift is not None:
-			x = (x - self.out_shift) / self.out_scale
-		x = (x + 1) / 2
-		x = (x * (self.bins - 1) * self.bases).sum(dim=-1).long()
-		return x
+    def idx_to_vq(self, x):
+        x = x.unsqueeze(-1) // self.bases % self.bins
+        x = x.div(self.bins-1)
+        x = (x / (1-1e-7)).logit(eps=self.eps)
+        if self.dim != -1:
+            x = x.movedim(-1, self.dim)
+        return x
 
-	def idx_to_vq(self, x):
-		x = x.unsqueeze(-1) // self.bases % self.bins
-		x = (x / (self.bins-1 - 1e-3)) * 2 - 1
-		if self.out_shift is not None:
-			x = x * self.out_scale + self.out_shift
-		return x
+    def forward(self, x, quantize=True):
+        if self.dim != -1:
+            x = x.movedim(self.dim, -1)
 
-	def forward(self, x, quantize=True):
-		if self.dim != -1:
-			x = x.swapdims(self.dim, -1)
+        x, x_sigmoid = self._round(x, quantize=quantize)
+        idx = self.vq_to_idx(x_sigmoid, is_sigmoid=True)
 
-		x = self._round(x, quantize=quantize)
-		idx = self.vq_to_idx(x)
-
-		if self.dim != -1:
-			x = x.swapdims(-1, self.dim)
-		return x, idx
+        if self.dim != -1:
+            x = x.movedim(-1, self.dim)
+        return x, idx
